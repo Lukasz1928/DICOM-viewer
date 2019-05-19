@@ -5,6 +5,7 @@ import numpy as np
 import pydicom
 from PIL import Image, ImageTk
 
+from viewer.command.command_executor import CommandExecutor
 from viewer.drawer import Drawer
 
 
@@ -20,6 +21,8 @@ class MainWindow:
         self.setup_initial_image()
         self.setup_menubar()
         self.setup_menu()
+
+        executor = CommandExecutor(self.canvas, None)
 
     def setup_default_bindings(self):
         self.canvas.unbind("<B1-Motion>")

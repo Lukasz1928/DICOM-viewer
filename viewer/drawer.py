@@ -10,7 +10,7 @@ class Drawer:
         x, y = event.x, event.y
         if self.prev_curve_point is not None:
             _x, _y = self.prev_curve_point
-            self.canvas.create_line(x, y, _x, _y, fill=self.color, width=3)
+            ret = self.canvas.create_line(x, y, _x, _y, fill=self.color, width=3)
         self.prev_curve_point = (x, y)
 
     def reset_curve(self, event):
