@@ -10,8 +10,28 @@ class CommandExecutor:
 
     def execute(self, command):
         command.execute()
-        self.done.append(command)
+        self.add(command)
 
-    def undo(self):
-        command = self.done.pop()
-        self.undone.append(command)
+    def add(self, command):
+        self.done.append(command)
+        print('command added: {}'.format(self.done))
+
+    def undo(self, event):
+        print('undo')
+        try:
+            command = self.done.pop()
+        except IndexError:
+            pass  # nothing to be undone - ignore command
+        else:
+            print('undone: {}'.format(command))
+            command.undo()
+            self.undone.append(command)
+
+    def redo(self, event):
+        try:
+            command = self.undone.pop()
+        except IndexError:
+            pass  # nothing to be redone - ignore command
+        else:
+            command.execute()
+            self.done.append(command)

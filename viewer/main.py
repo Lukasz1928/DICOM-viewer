@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog
+from tkinter.colorchooser import askcolor
 
 import numpy as np
 import pydicom
@@ -13,18 +14,15 @@ class MainWindow:
 
     def __init__(self, main: tk.Tk):
         self.main = main
-        self.canvas = tk.Canvas(main, width=512, height=512)
-        self.drawer = Drawer(self.canvas)
-        self.canvas.grid(row=1, column=0)
-
+        self.setup_canvas()
         self.setup_default_bindings()
         self.setup_initial_image()
         self.setup_menubar()
         self.setup_menu()
 
-        executor = CommandExecutor(self.canvas, None)
-
     def setup_default_bindings(self):
+        self.main.bind("<Control-z>", self.executor.undo)
+        self.main.bind("<Control-Shift-Z>", self.executor.redo)
         self.canvas.unbind("<B1-Motion>")
         self.canvas.unbind("<ButtonRelease-1>")
 
@@ -44,6 +42,12 @@ class MainWindow:
         menubar.add_cascade(label="File", menu=filemenu)
         self.main.config(menu=menubar)
 
+    def setup_canvas(self):
+        self.canvas = tk.Canvas(self.main, width=512, height=512)
+        self.executor = CommandExecutor(self.canvas, None)
+        self.drawer = Drawer(self.canvas, self.executor)
+        self.canvas.grid(row=1, column=0)
+
     def setup_drawing_bindings(self):
         self.canvas.bind("<B1-Motion>", self.drawer.draw_curve)
         self.canvas.bind("<ButtonRelease-1>", self.drawer.reset_curve)
@@ -56,9 +60,16 @@ class MainWindow:
             self.setup_drawing_bindings()
             self.b.config(relief="sunken")
 
+    def color_button_command(self):
+        color = askcolor()
+        self.drawer.set_color(color[1])
+        print(color)
+
     def setup_menu(self):
         self.b = tk.Button(self.main, text="Draw", command=self.draw_button_command, relief="raised")
         self.b.grid(row=0, column=0)
+        self.color_button = tk.Button(self.main, text="Select color", command=self.color_button_command, relief="raised")
+        self.color_button.grid(row=0, column=1)
 
     def open_file(self):
         path = filedialog.askopenfilename(initialdir=".", title="Select file",
