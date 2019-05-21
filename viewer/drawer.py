@@ -22,7 +22,6 @@ class Drawer:
         self.prev_curve_point = None
         self.executor.add(self.draw_curve_command)
         self.draw_curve_command = None
-        print(self.executor.done)
 
     def set_color(self, color):
         self.color = color

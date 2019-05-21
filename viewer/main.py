@@ -63,7 +63,6 @@ class MainWindow:
     def color_button_command(self):
         color = askcolor()
         self.drawer.set_color(color[1])
-        print(color)
 
     def setup_menu(self):
         self.b = tk.Button(self.main, text="Draw", command=self.draw_button_command, relief="raised")

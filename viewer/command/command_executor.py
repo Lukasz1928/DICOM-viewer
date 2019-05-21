@@ -14,16 +14,14 @@ class CommandExecutor:
 
     def add(self, command):
         self.done.append(command)
-        print('command added: {}'.format(self.done))
+        self.undone.clear()
 
     def undo(self, event):
-        print('undo')
         try:
             command = self.done.pop()
         except IndexError:
             pass  # nothing to be undone - ignore command
         else:
-            print('undone: {}'.format(command))
             command.undo()
             self.undone.append(command)
 

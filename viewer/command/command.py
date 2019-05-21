@@ -28,7 +28,6 @@ class ComplexCommand(Command):
             command.execute()
 
     def undo(self):
-        print('len cc: {}'.format(len(self.commands)))
         for c in reversed(self.commands):
             c.undo()
 
@@ -47,12 +46,10 @@ class DrawLineCommand(Command):
             raise CommandAlreadyExecutedException()
         self.id = self.canvas.create_line(self.start_point[0], self.start_point[1],
                                           self.end_point[0], self.end_point[1], fill=self.color, width=3)
-        print(self.id)
         self.executed = True
 
     def undo(self):
         if not self.executed:
             raise CommandNotExecutedException()
-        print('undo {}'.format(self.id))
         self.canvas.delete(self.id)
         self.executed = False
