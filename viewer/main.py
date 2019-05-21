@@ -29,8 +29,7 @@ class MainWindow:
         self._img = np.ndarray([512, 512])
         self.color = 255
         self._img.fill(self.color)
-        self.image = Image.fromarray(self._img)
-        self.image = self.image.resize((512, 512), Image.ANTIALIAS)
+        self.image = Image.fromarray(self._img).resize((512, 512))
         self.img = ImageTk.PhotoImage(image=self.image, master=self.main)
         self.image_on_canvas = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.img)
 
@@ -66,10 +65,9 @@ class MainWindow:
             self.update_window()
 
     def update_window(self, event=None):
-        self.image2 = Image.fromarray(self._img)
-        self.image2 = self.image2.resize((512, 512), Image.ANTIALIAS)
-        self.img2 = ImageTk.PhotoImage(image=self.image2)
-        self.canvas.itemconfig(self.image_on_canvas, image=self.img2)
+        self.image = Image.fromarray(self._img).resize((512, 512))
+        self.img = ImageTk.PhotoImage(image=self.image)
+        self.canvas.itemconfig(self.image_on_canvas, image=self.img)
 
 
 def main():
