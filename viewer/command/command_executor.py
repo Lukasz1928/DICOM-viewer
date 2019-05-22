@@ -16,7 +16,7 @@ class CommandExecutor:
         self.done.append(command)
         self.undone.clear()
 
-    def undo(self, event):
+    def undo(self, event=None):
         try:
             command = self.done.pop()
         except IndexError:
@@ -25,7 +25,7 @@ class CommandExecutor:
             command.undo()
             self.undone.append(command)
 
-    def redo(self, event):
+    def redo(self, event=None):
         try:
             command = self.undone.pop()
         except IndexError:
@@ -33,3 +33,11 @@ class CommandExecutor:
         else:
             command.execute()
             self.done.append(command)
+
+    def undo_all(self):
+        while len(self.done) > 0:
+            self.undo()
+
+    def clear(self):
+        self.done.clear()
+        self.undone.clear()

@@ -1,7 +1,5 @@
 from abc import ABC
 
-from viewer.command.exceptions import CommandAlreadyExecutedException, CommandNotExecutedException
-
 
 class Command(ABC):
     def execute(self):
@@ -39,17 +37,10 @@ class DrawLineCommand(Command):
         self.end_point = end_point
         self.canvas = canvas
         self.color = color
-        self.executed = False
 
     def execute(self):
-        if self.executed:
-            raise CommandAlreadyExecutedException()
         self.id = self.canvas.create_line(self.start_point[0], self.start_point[1],
                                           self.end_point[0], self.end_point[1], fill=self.color, width=3)
-        self.executed = True
 
     def undo(self):
-        if not self.executed:
-            raise CommandNotExecutedException()
         self.canvas.delete(self.id)
-        self.executed = False

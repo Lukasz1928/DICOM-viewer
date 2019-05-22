@@ -27,10 +27,10 @@ class MainWindow:
         self.canvas.unbind("<ButtonRelease-1>")
 
     def setup_initial_image(self):
-        self._img = np.ndarray([512, 512])
+        self._img = np.ndarray(self._canvas_dimensions())
         self.color = 255
         self._img.fill(self.color)
-        self.image = Image.fromarray(self._img).resize((512, 512))
+        self.image = Image.fromarray(self._img).resize(self._canvas_dimensions())
         self.img = ImageTk.PhotoImage(image=self.image, master=self.main)
         self.image_on_canvas = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.img)
 
@@ -47,6 +47,7 @@ class MainWindow:
         self.executor = CommandExecutor(self.canvas, None)
         self.drawer = Drawer(self.canvas, self.executor)
         self.canvas.grid(row=1, column=0)
+        self.canvas.update()
 
     def setup_drawing_bindings(self):
         self.canvas.bind("<B1-Motion>", self.drawer.draw_curve)
@@ -76,11 +77,16 @@ class MainWindow:
         if path != '':
             self._img = pydicom.dcmread(path).pixel_array
             self.update_window()
+            self.executor.undo_all()
+            self.executor.clear()
 
     def update_window(self, event=None):
-        self.image = Image.fromarray(self._img).resize((512, 512))
+        self.image = Image.fromarray(self._img).resize(self._canvas_dimensions())
         self.img = ImageTk.PhotoImage(image=self.image)
         self.canvas.itemconfig(self.image_on_canvas, image=self.img)
+
+    def _canvas_dimensions(self):
+        return self.canvas.winfo_width(), self.canvas.winfo_height()
 
 
 def main():
