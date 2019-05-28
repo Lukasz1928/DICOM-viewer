@@ -53,6 +53,10 @@ class MainWindow:
         self.canvas.bind("<B1-Motion>", self.drawer.draw_curve)
         self.canvas.bind("<ButtonRelease-1>", self.drawer.reset_curve)
 
+    def setup_angle_bindings(self):
+        self.canvas.bind("<Button-1>", self.drawer.draw_angle)
+        self.canvas.bind("<Motion>", self.drawer.draw_angle)
+
     def draw_button_command(self):
         if self.b.config('relief')[-1] == 'sunken':
             self.setup_default_bindings()
@@ -65,11 +69,21 @@ class MainWindow:
         color = askcolor()
         self.drawer.set_color(color[1])
 
+    def angle_button_command(self):
+        if self.angle_button.config('relief')[-1] == 'sunken':
+            self.setup_default_bindings()
+            self.angle_button.config(relief="raised")
+        else:
+            self.setup_angle_bindings()
+            self.angle_button.config(relief="sunken")
+
     def setup_menu(self):
         self.b = tk.Button(self.main, text="Draw", command=self.draw_button_command, relief="raised")
         self.b.grid(row=0, column=0)
         self.color_button = tk.Button(self.main, text="Select color", command=self.color_button_command, relief="raised")
         self.color_button.grid(row=0, column=1)
+        self.angle_button = tk.Button(self.main, text="Measure angle", command=self.angle_button_command, relief="raised")
+        self.angle_button.grid(row=0, column=2)
 
     def open_file(self):
         path = filedialog.askopenfilename(initialdir=".", title="Select file",
