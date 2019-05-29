@@ -187,8 +187,8 @@ class RectangleCommand(ComplexCommand):
 
     def _print_label(self):
         loc = self._calculate_label_location()
-        area = self._calculate_area()
-        perimeter = self._calculate_perimeter()
+        area = round(self._calculate_area(), 2)
+        perimeter = round(self._calculate_perimeter(), 2)
         text = "Area: {} mm2\nPerim.: {} mm".format(area, perimeter)
         text_command = TextCommand(self.canvas, text, self.color, loc)
         text_command.execute()
@@ -203,3 +203,83 @@ class RectangleCommand(ComplexCommand):
         width = abs(self.points[0][0] - self.points[1][0]) * self.pixel_spacing[0]
         height = abs(self.points[0][1] - self.points[1][1]) * self.pixel_spacing[1]
         return 2 * (width + height)
+
+
+class EllipseCommand(ComplexCommand):
+    def __init__(self, canvas, color, pixel_spacing):
+        ComplexCommand.__init__(self, canvas)
+        self.color = color
+        self.points = []
+        self.confirmed = 0
+        self.pixel_spacing = pixel_spacing
+
+    # TODO: invent better name ;)
+    class OvalCommand(Command):
+        def __init__(self, canvas, point1, point2, color):
+            self.canvas = canvas
+            self.color = color
+            self.point1 = point1
+            self.point2 = point2
+            self.id = None
+
+        def execute(self):
+            self.id = self.canvas.create_oval(self.point1[0], self.point1[1], self.point2[0], self.point2[1],
+                                              outline=self.color, width=3)
+
+        def undo(self):
+            self.canvas.delete(self.id)
+
+    def add_point(self, point, final=False):
+        if final:
+            if len(self.points) > self.confirmed:
+                self.points.pop()
+                self.commands.pop().undo()
+            self.points.append(point)
+            self.confirmed += 1
+            if len(self.points) == 2:
+                command = self.OvalCommand(self.canvas, self.points[0], self.points[1], self.color)
+                command.execute()
+                self.commands.append(command)
+        else:
+            if len(self.points) > self.confirmed:
+                self.points.pop()
+                self.commands.pop().undo()
+            self.points.append(point)
+            if len(self.points) == 2:
+                command = self.OvalCommand(self.canvas, self.points[0], self.points[1], self.color)
+                command.execute()
+                self.commands.append(command)
+        finished = final and len(self.points) == 2
+        if finished and self.pixel_spacing is not None:
+            self._print_label()
+        return finished
+
+    def _calculate_label_location(self):
+        dx = 0
+        dy = 20
+        x, y = max([x[0] for x in self.points]) + dx, max([x[1] for x in self.points]) + dy
+        if x >= self.canvas.winfo_width():
+            x = x - 2 * dx
+        if y >= self.canvas.winfo_width():
+            y = y - 2 * dy
+        return x, y
+
+    def _print_label(self):
+        loc = self._calculate_label_location()
+        area = round(self._calculate_area(), 2)
+        perimeter = round(self._calculate_perimeter(), 2)
+        text = "Area: {} mm2\nPerim.: {} mm".format(area, perimeter)
+        text_command = TextCommand(self.canvas, text, self.color, loc)
+        text_command.execute()
+        self.commands.append(text_command)
+
+    def _calculate_area(self):
+        width = abs(self.points[0][0] - self.points[1][0]) / 2.0 * self.pixel_spacing[0]
+        height = abs(self.points[0][1] - self.points[1][1]) / 2.0 * self.pixel_spacing[1]
+        return width * height * math.pi
+
+    def _calculate_perimeter(self):
+        width = abs(self.points[0][0] - self.points[1][0]) / 2.0 * self.pixel_spacing[0]
+        height = abs(self.points[0][1] - self.points[1][1]) / 2.0 * self.pixel_spacing[1]
+        h = pow(width - height, 2) / pow(width + height, 2)
+        return math.pi * (width + height) * (1 + (3 * h) / (10 + math.sqrt(4 - 3 * h)))
