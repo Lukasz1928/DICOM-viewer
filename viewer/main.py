@@ -1,9 +1,7 @@
 import tkinter as tk
-from tkinter import filedialog
 from tkinter.colorchooser import askcolor
 
 import numpy as np
-import pydicom
 from PIL import Image, ImageTk
 
 from viewer.command.command_executor import CommandExecutor
@@ -61,8 +59,9 @@ class MainWindow:
         self.canvas.bind("<Motion>", self.drawer.draw_angle)
 
     def _setup_rectangle_bindings(self):
-        self.canvas.bind("<Button-1>", self.drawer.draw_rectangle)
+        self.canvas.bind("<ButtonPress-1>", self.drawer.draw_rectangle)
         self.canvas.bind("<Motion>", self.drawer.draw_rectangle)
+        self.canvas.bind("<ButtonRelease-1>", self.drawer.draw_rectangle)
 
     def _draw_button_command(self):
         if self.b.config('relief')[-1] == 'sunken':

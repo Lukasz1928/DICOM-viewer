@@ -42,7 +42,7 @@ class Drawer:
         x, y = event.x, event.y
         r = False
         if self.draw_command is not None:
-            r = self.draw_command.add_point((x, y), final=event.type == '4' and event.num == 1)
+            r = self.draw_command.add_point((x, y), final=event.type == '5' and event.num == 1)
         else:
             if event.type == '4' and event.num == 1:
                 self.draw_command = RectangleCommand(self.canvas, self.color, self.pixel_spacing)

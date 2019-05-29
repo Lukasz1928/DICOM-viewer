@@ -170,10 +170,10 @@ class RectangleCommand(ComplexCommand):
                 command = self.RectCommand(self.canvas, self.points[0], self.points[1], self.color)
                 command.execute()
                 self.commands.append(command)
-        finised = final and len(self.points) == 2
-        if finised and self.pixel_spacing is not None:
+        finished = final and len(self.points) == 2
+        if finished and self.pixel_spacing is not None:
             self._print_label()
-        return finised
+        return finished
 
     def _calculate_label_location(self):
         dx = 0
