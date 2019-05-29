@@ -57,6 +57,10 @@ class MainWindow:
         self.canvas.bind("<Button-1>", self.drawer.draw_angle)
         self.canvas.bind("<Motion>", self.drawer.draw_angle)
 
+    def setup_rectangle_bindings(self):
+        self.canvas.bind("<Button-1>", self.drawer.draw_rectangle)
+        self.canvas.bind("<Motion>", self.drawer.draw_rectangle)
+
     def draw_button_command(self):
         if self.b.config('relief')[-1] == 'sunken':
             self.setup_default_bindings()
@@ -77,6 +81,14 @@ class MainWindow:
             self.setup_angle_bindings()
             self.angle_button.config(relief="sunken")
 
+    def rectangle_button_command(self):
+        if self.rectangle_button.config('relief')[-1] == 'sunken':
+            self.setup_default_bindings()
+            self.rectangle_button.config(relief="raised")
+        else:
+            self.setup_rectangle_bindings()
+            self.rectangle_button.config(relief="sunken")
+
     def setup_menu(self):
         self.b = tk.Button(self.main, text="Draw", command=self.draw_button_command, relief="raised")
         self.b.grid(row=0, column=0)
@@ -84,6 +96,8 @@ class MainWindow:
         self.color_button.grid(row=0, column=1)
         self.angle_button = tk.Button(self.main, text="Measure angle", command=self.angle_button_command, relief="raised")
         self.angle_button.grid(row=0, column=2)
+        self.rectangle_button = tk.Button(self.main, text="Rectangle", command=self.rectangle_button_command, relief="raised")
+        self.rectangle_button.grid(row=0, column=3)
 
     def open_file(self):
         path = filedialog.askopenfilename(initialdir=".", title="Select file",
