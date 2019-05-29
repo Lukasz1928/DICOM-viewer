@@ -2,11 +2,12 @@ from viewer.command.command import LineCommand, ComplexCommand, AngleCommand, Re
 
 
 class Drawer:
-    def __init__(self, canvas, executor):
+    def __init__(self, canvas, executor, pixel_spacing=None):
         self.canvas = canvas
         self.executor = executor
         self.prev_points = None
         self.color = 'red'
+        self.pixel_spacing = pixel_spacing
         self.draw_command = None
 
     def draw_curve(self, event):
@@ -44,7 +45,7 @@ class Drawer:
             r = self.draw_command.add_point((x, y), final=event.type == '4' and event.num == 1)
         else:
             if event.type == '4' and event.num == 1:
-                self.draw_command = RectangleCommand(self.canvas, self.color)
+                self.draw_command = RectangleCommand(self.canvas, self.color, self.pixel_spacing)
                 _ = self.draw_command.add_point((x, y), final=True)
                 r = self.draw_command.add_point((x, y))
                 self.executor.add(self.draw_command)

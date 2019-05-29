@@ -7,6 +7,7 @@ import pydicom
 from PIL import Image, ImageTk
 
 from viewer.command.command_executor import CommandExecutor
+from viewer.dicom_utils.io import read_dicom
 from viewer.drawer import Drawer
 
 
@@ -14,19 +15,21 @@ class MainWindow:
 
     def __init__(self, main: tk.Tk):
         self.main = main
-        self.setup_canvas()
-        self.setup_default_bindings()
-        self.setup_initial_image()
-        self.setup_menubar()
-        self.setup_menu()
+        self._setup_canvas()
+        self._setup_default_bindings()
+        self._setup_initial_image()
+        self._setup_menubar()
+        self._setup_menu()
 
-    def setup_default_bindings(self):
+        self.dcm = None
+
+    def _setup_default_bindings(self):
         self.main.bind("<Control-z>", self.executor.undo)
         self.main.bind("<Control-Shift-Z>", self.executor.redo)
         self.canvas.unbind("<B1-Motion>")
         self.canvas.unbind("<ButtonRelease-1>")
 
-    def setup_initial_image(self):
+    def _setup_initial_image(self):
         self._img = np.ndarray(self._canvas_dimensions())
         self.color = 255
         self._img.fill(self.color)
@@ -34,84 +37,81 @@ class MainWindow:
         self.img = ImageTk.PhotoImage(image=self.image, master=self.main)
         self.image_on_canvas = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.img)
 
-    def setup_menubar(self):
+    def _setup_menubar(self):
         menubar = tk.Menu(self.main)
         filemenu = tk.Menu(menubar, tearoff=0)
-        filemenu.add_command(label="Open", command=self.open_file)
+        filemenu.add_command(label="Open", command=self._open_file)
         menubar = tk.Menu(self.main)
         menubar.add_cascade(label="File", menu=filemenu)
         self.main.config(menu=menubar)
 
-    def setup_canvas(self):
+    def _setup_canvas(self):
         self.canvas = tk.Canvas(self.main, width=512, height=512)
         self.executor = CommandExecutor(self.canvas, None)
         self.drawer = Drawer(self.canvas, self.executor)
         self.canvas.grid(row=1, column=0)
         self.canvas.update()
 
-    def setup_drawing_bindings(self):
+    def _setup_drawing_bindings(self):
         self.canvas.bind("<B1-Motion>", self.drawer.draw_curve)
         self.canvas.bind("<ButtonRelease-1>", self.drawer.reset_curve)
 
-    def setup_angle_bindings(self):
+    def _setup_angle_bindings(self):
         self.canvas.bind("<Button-1>", self.drawer.draw_angle)
         self.canvas.bind("<Motion>", self.drawer.draw_angle)
 
-    def setup_rectangle_bindings(self):
+    def _setup_rectangle_bindings(self):
         self.canvas.bind("<Button-1>", self.drawer.draw_rectangle)
         self.canvas.bind("<Motion>", self.drawer.draw_rectangle)
 
-    def draw_button_command(self):
+    def _draw_button_command(self):
         if self.b.config('relief')[-1] == 'sunken':
-            self.setup_default_bindings()
+            self._setup_default_bindings()
             self.b.config(relief="raised")
         else:
-            self.setup_drawing_bindings()
+            self._setup_drawing_bindings()
             self.b.config(relief="sunken")
 
-    def color_button_command(self):
+    def _color_button_command(self):
         color = askcolor()
         self.drawer.set_color(color[1])
 
-    def angle_button_command(self):
+    def _angle_button_command(self):
         if self.angle_button.config('relief')[-1] == 'sunken':
-            self.setup_default_bindings()
+            self._setup_default_bindings()
             self.angle_button.config(relief="raised")
         else:
-            self.setup_angle_bindings()
+            self._setup_angle_bindings()
             self.angle_button.config(relief="sunken")
 
-    def rectangle_button_command(self):
+    def _rectangle_button_command(self):
         if self.rectangle_button.config('relief')[-1] == 'sunken':
-            self.setup_default_bindings()
+            self._setup_default_bindings()
             self.rectangle_button.config(relief="raised")
         else:
-            self.setup_rectangle_bindings()
+            self._setup_rectangle_bindings()
             self.rectangle_button.config(relief="sunken")
 
-    def setup_menu(self):
-        self.b = tk.Button(self.main, text="Draw", command=self.draw_button_command, relief="raised")
+    def _setup_menu(self):
+        self.b = tk.Button(self.main, text="Draw", command=self._draw_button_command, relief="raised")
         self.b.grid(row=0, column=0)
-        self.color_button = tk.Button(self.main, text="Select color", command=self.color_button_command, relief="raised")
+        self.color_button = tk.Button(self.main, text="Select color", command=self._color_button_command, relief="raised")
         self.color_button.grid(row=0, column=1)
-        self.angle_button = tk.Button(self.main, text="Measure angle", command=self.angle_button_command, relief="raised")
+        self.angle_button = tk.Button(self.main, text="Measure angle", command=self._angle_button_command, relief="raised")
         self.angle_button.grid(row=0, column=2)
-        self.rectangle_button = tk.Button(self.main, text="Rectangle", command=self.rectangle_button_command, relief="raised")
+        self.rectangle_button = tk.Button(self.main, text="Rectangle", command=self._rectangle_button_command, relief="raised")
         self.rectangle_button.grid(row=0, column=3)
 
-    def open_file(self):
-        path = filedialog.askopenfilename(initialdir=".", title="Select file",
-                                          filetypes=(("DICOM files", "*.dcm"),))
-        if path != '':
-            self._img = pydicom.dcmread(path).pixel_array
-            self.update_window()
+    def _open_file(self):
+        self.dcm = read_dicom()
+        if self.dcm is not None:
+            raw_image = self.dcm.pixel_array
+            self.drawer.pixel_spacing = self.dcm.data_element("PixelSpacing").value
+            self.image = Image.fromarray(raw_image).resize(self._canvas_dimensions())
+            self.img = ImageTk.PhotoImage(image=self.image)
+            self.canvas.itemconfig(self.image_on_canvas, image=self.img)
             self.executor.undo_all()
             self.executor.clear()
-
-    def update_window(self, event=None):
-        self.image = Image.fromarray(self._img).resize(self._canvas_dimensions())
-        self.img = ImageTk.PhotoImage(image=self.image)
-        self.canvas.itemconfig(self.image_on_canvas, image=self.img)
 
     def _canvas_dimensions(self):
         return self.canvas.winfo_width(), self.canvas.winfo_height()

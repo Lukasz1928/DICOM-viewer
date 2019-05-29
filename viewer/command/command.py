@@ -127,13 +127,13 @@ class AngleCommand(ComplexCommand):
         return loc
 
 
-class RectangleCommand(ComplexCommand): # TODO: remove default for spatial_resolution
-    def __init__(self, canvas, color, spatial_resolution=128):
+class RectangleCommand(ComplexCommand):
+    def __init__(self, canvas, color, pixel_spacing):
         ComplexCommand.__init__(self, canvas)
         self.color = color
         self.points = []
         self.confirmed = 0
-        self.spatial_resolution = spatial_resolution
+        self.pixel_spacing = pixel_spacing
 
     class RectCommand(Command):
         def __init__(self, canvas, point1, point2, color):
@@ -171,7 +171,7 @@ class RectangleCommand(ComplexCommand): # TODO: remove default for spatial_resol
                 command.execute()
                 self.commands.append(command)
         finised = final and len(self.points) == 2
-        if finised:
+        if finised and self.pixel_spacing is not None:
             self._print_label()
         return finised
 
@@ -195,11 +195,11 @@ class RectangleCommand(ComplexCommand): # TODO: remove default for spatial_resol
         self.commands.append(text_command)
 
     def _calculate_area(self):
-        width = abs(self.points[0][0] - self.points[1][0])
-        height = abs(self.points[0][1] - self.points[1][1])
-        return width * height * self.spatial_resolution
+        width = abs(self.points[0][0] - self.points[1][0]) * self.pixel_spacing[0]
+        height = abs(self.points[0][1] - self.points[1][1]) * self.pixel_spacing[1]
+        return width * height
 
     def _calculate_perimeter(self):
-        width = abs(self.points[0][0] - self.points[1][0])
-        height = abs(self.points[0][1] - self.points[1][1])
-        return 2 * (width + height) * self.spatial_resolution
+        width = abs(self.points[0][0] - self.points[1][0]) * self.pixel_spacing[0]
+        height = abs(self.points[0][1] - self.points[1][1]) * self.pixel_spacing[1]
+        return 2 * (width + height)
