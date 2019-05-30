@@ -68,6 +68,11 @@ class MainWindow:
         self.canvas.bind("<Motion>", self.drawer.draw_ellipse)
         self.canvas.bind("<ButtonRelease-1>", self.drawer.draw_ellipse)
 
+    def _setup_line_bindings(self):
+        self.canvas.bind("<ButtonPress-1>", self.drawer.draw_line)
+        self.canvas.bind("<Motion>", self.drawer.draw_line)
+        self.canvas.bind("<ButtonRelease-1>", self.drawer.draw_line)
+
     def _draw_button_command(self):
         if self.b.config('relief')[-1] == 'sunken':
             self._setup_default_bindings()
@@ -104,6 +109,14 @@ class MainWindow:
             self._setup_ellipse_bindings()
             self.ellipse_button.config(relief="sunken")
 
+    def _line_button_command(self):
+        if self.line_button.config('relief')[-1] == 'sunken':
+            self._setup_default_bindings()
+            self.line_button.config(relief="raised")
+        else:
+            self._setup_line_bindings()
+            self.line_button.config(relief="sunken")
+
     def _setup_menu(self):
         self.b = tk.Button(self.main, text="Draw", command=self._draw_button_command, relief="raised")
         self.b.grid(row=0, column=0)
@@ -115,6 +128,8 @@ class MainWindow:
         self.rectangle_button.grid(row=0, column=3)
         self.ellipse_button = tk.Button(self.main, text="Ellipse", command=self._ellipse_button_command, relief="raised")
         self.ellipse_button.grid(row=0, column=4)
+        self.line_button = tk.Button(self.main, text="Line", command=self._line_button_command, relief="raised")
+        self.line_button.grid(row=0, column=5)
 
     def _open_file(self):
         self.dcm = read_dicom()

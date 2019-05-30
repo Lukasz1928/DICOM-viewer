@@ -213,7 +213,6 @@ class EllipseCommand(ComplexCommand):
         self.confirmed = 0
         self.pixel_spacing = pixel_spacing
 
-    # TODO: invent better name ;)
     class OvalCommand(Command):
         def __init__(self, canvas, point1, point2, color):
             self.canvas = canvas
@@ -281,5 +280,66 @@ class EllipseCommand(ComplexCommand):
     def _calculate_perimeter(self):
         width = abs(self.points[0][0] - self.points[1][0]) / 2.0 * self.pixel_spacing[0]
         height = abs(self.points[0][1] - self.points[1][1]) / 2.0 * self.pixel_spacing[1]
-        h = pow(width - height, 2) / pow(width + height, 2)
+        h = ((width - height) ** 2) / ((width + height) ** 2)
         return math.pi * (width + height) * (1 + (3 * h) / (10 + math.sqrt(4 - 3 * h)))
+
+
+class DistanceCommand(ComplexCommand):
+    def __init__(self, canvas, color, pixel_spacing):
+        ComplexCommand.__init__(self, canvas)
+        self.color = color
+        self.points = []
+        self.confirmed = 0
+        self.pixel_spacing = pixel_spacing
+
+    def add_point(self, point, final=False):
+        if final:
+            if len(self.points) > self.confirmed:
+                self.points.pop()
+                self.commands.pop().undo()
+            self.points.append(point)
+            self.confirmed += 1
+            if len(self.points) == 2:
+                command = LineCommand(self.canvas, self.points[0], self.points[1], self.color)
+                command.execute()
+                self.commands.append(command)
+        else:
+            if len(self.points) > self.confirmed:
+                self.points.pop()
+                self.commands.pop().undo()
+            self.points.append(point)
+            if len(self.points) == 2:
+                command = LineCommand(self.canvas, self.points[0], self.points[1], self.color)
+                command.execute()
+                self.commands.append(command)
+        finished = final and len(self.points) == 2
+        if finished and self.pixel_spacing is not None:
+            self._print_label()
+        return finished
+
+    def _calculate_label_location(self):
+        x_r, y_r = max(self.points, key=lambda p: p[0])
+        x_l, y_l = min(self.points, key=lambda p: p[0])
+        if x_l == x_r or (y_r - y_l) / (x_r - x_l) < -0.5:
+            dx = 45
+            dy = 10
+        elif (y_r - y_l) / (x_r - x_l) > 0:
+            dx = 0
+            dy = 10
+        else:
+            dx = 0
+            dy = -10
+        return x_r + dx, y_r + dy
+
+    def _print_label(self):
+        loc = self._calculate_label_location()
+        length = round(self._calculate_length(), 2)
+        text = "Length: {} mm".format(length)
+        text_command = TextCommand(self.canvas, text, self.color, loc)
+        text_command.execute()
+        self.commands.append(text_command)
+
+    def _calculate_length(self):
+        dx = (self.points[0][0] - self.points[1][0]) * self.pixel_spacing[0]
+        dy = (self.points[0][1] - self.points[1][1]) * self.pixel_spacing[1]
+        return math.sqrt(dx ** 2 + dy ** 2)
