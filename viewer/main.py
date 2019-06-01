@@ -9,6 +9,7 @@ from PIL import Image, ImageTk
 
 from viewer.command.command_executor import CommandExecutor
 from viewer.dicom_utils.io import read_dicom
+from viewer.dicom_utils.window import DicomImageDisplay
 from viewer.drawer import Drawer
 
 
@@ -27,7 +28,7 @@ class MainWindow:
         self._setup_preview()
         self._setup_menubar()
         self._setup_menu()
-
+        self.color = 255  # TODO: remove
         self.dcm = None
 
     def _setup_default_bindings(self):
@@ -41,12 +42,7 @@ class MainWindow:
 
     def _setup_initial_image(self):
         self.dir_path = ''
-        self._img = np.ndarray(self._canvas_dimensions())
-        self.color = 255
-        self._img.fill(self.color)
-        self.image = Image.fromarray(self._img).resize(self._canvas_dimensions())
-        self.img = ImageTk.PhotoImage(image=self.image, master=self.main)
-        self.image_on_canvas = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.img)
+        self.display.set_default_image()
 
     def _setup_preview(self):
         self.preview_count = 6
@@ -130,10 +126,13 @@ class MainWindow:
 
     def _setup_canvas(self):
         self.canvas = tk.Canvas(self.main, width=512, height=512)
-        self.executor = CommandExecutor(self.canvas, None)
-        self.drawer = Drawer(self.canvas, self.executor)
         self.canvas.grid(row=2, column=0)
         self.canvas.update()
+
+        self.executor = CommandExecutor(self.canvas, None)
+
+        self.drawer = Drawer(self.canvas, self.executor)
+        self.display = DicomImageDisplay(self.canvas, self.main)
 
     def _setup_drawing_bindings(self):
         self.canvas.bind("<ButtonPress-1>", self.drawer.draw_curve)
@@ -159,14 +158,19 @@ class MainWindow:
         self.canvas.bind("<Motion>", self.drawer.draw_line)
         self.canvas.bind("<ButtonRelease-1>", self.drawer.draw_line)
 
+    def _setup_window_bindings(self):
+        self.canvas.bind("<ButtonPress-1>", self.display.update_window_params)
+        self.canvas.bind("<Motion>", self.display.update_window_params)
+        self.canvas.bind("<ButtonRelease-1>", self.display.update_window_params)
+
     def _draw_button_command(self):
-        if self.b.config('relief')[-1] == 'sunken':
+        if self.draw_button.config('relief')[-1] == 'sunken':
             self._setup_default_bindings()
-            self.b.config(relief="raised")
+            self.draw_button.config(relief="raised")
         else:
             self._reset_drawer()
             self._setup_drawing_bindings()
-            self.b.config(relief="sunken")
+            self.draw_button.config(relief="sunken")
 
     def _color_button_command(self):
         color = askcolor()
@@ -209,13 +213,21 @@ class MainWindow:
             self._setup_line_bindings()
             self.line_button.config(relief="sunken")
 
+    def _window_button_command(self):
+        if self.window_button.config('relief')[-1] == 'sunken':
+            self._setup_default_bindings()
+            self.window_button.config(relief="raised")
+        else:
+            self._setup_window_bindings()
+            self.window_button.config(relief="sunken")
+
     def _clear_button_command(self):
         self.executor.reset()
 
     def _reset_drawer(self):
         self._setup_default_bindings()
         self.drawer.reset()
-        self.b.config(relief="raised")
+        self.draw_button.config(relief="raised")
         self.angle_button.config(relief="raised")
         self.rectangle_button.config(relief="raised")
         self.ellipse_button.config(relief="raised")
@@ -235,7 +247,8 @@ class MainWindow:
         self.redo_button.grid(row=0, column=1)
         self._create_popup_description(self.redo_button, 'Redo last action')
         self._insert_separator()
-        self.b = self._create_button(text="Draw", command=self._draw_button_command, description='Enables drawing')
+        self.draw_button = self._create_button(text="Draw", command=self._draw_button_command,
+                                               description='Enables drawing')
         self.angle_button = self._create_button(text="Angle", command=self._angle_button_command,
                                                 description='Measures angle')
         self.rectangle_button = self._create_button(text="Rectangle", command=self._rectangle_button_command,
@@ -250,6 +263,8 @@ class MainWindow:
         self._insert_separator()
         self.clear_button = self._create_button(text="Clear", command=self._clear_button_command,
                                                 description='Clears image and edit history')
+        self.window_button = self._create_button(text="Window", command=self._window_button_command,
+                                                 description='Edits image window width and centre')
 
     def _insert_separator(self):
         ttk.Separator(self.button_frame, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=20)
@@ -273,6 +288,14 @@ class MainWindow:
             return
         self.dir_path = "/".join(path.split("/")[:-1]) + "/"
         if self.dcm is not None:
+            self.drawer.pixel_spacing = self.dcm.data_element("PixelSpacing").value
+            self.drawer.rescale_factor = (self.display.canvas_dimensions()[0] / self.dcm.pixel_array.shape[0],
+                                          self.display.canvas_dimensions()[1] / self.dcm.pixel_array.shape[1])
+            self.drawer.measure = True
+            self.display.set_image(self.dcm.pixel_array, self.dcm.data_element("WindowWidth").value,
+                                                         self.dcm.data_element("WindowCenter").value)
+            self.executor.undo_all()
+            self.executor.clear()
             self._draw_image()
 
     def _draw_image(self):
