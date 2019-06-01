@@ -135,7 +135,12 @@ class MainWindow:
         self.dcm = read_dicom()
         if self.dcm is not None:
             raw_image = self.dcm.pixel_array
+
             self.drawer.pixel_spacing = self.dcm.data_element("PixelSpacing").value
+            print(self.dcm.data_element("PixelSpacing").value)
+            self.drawer.rescale_factor = (self._canvas_dimensions()[0] / self.dcm.pixel_array.shape[0],
+                                          self._canvas_dimensions()[1] / self.dcm.pixel_array.shape[1])
+
             self.image = Image.fromarray(raw_image).resize(self._canvas_dimensions())
             self.img = ImageTk.PhotoImage(image=self.image)
             self.canvas.itemconfig(self.image_on_canvas, image=self.img)

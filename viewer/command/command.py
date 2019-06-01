@@ -64,11 +64,14 @@ class LineCommand(Command):
 
 
 class AngleCommand(ComplexCommand):
-    def __init__(self, canvas, color):
+    def __init__(self, canvas, color, pixel_spacing, rescale_factor):
         ComplexCommand.__init__(self, canvas)
         self.color = color
         self.points = []
         self.confirmed = 0
+        self.pixel_spacing = pixel_spacing
+        self.rescale_factor = rescale_factor
+
 
     def add_point(self, point, final=False):
         if final:
@@ -101,8 +104,10 @@ class AngleCommand(ComplexCommand):
 
     def _calculate_angle(self):
         p1, p2, p3 = self.points[0], self.points[1], self.points[2]
-        v1 = (p1[0] - p2[0], p1[1] - p2[1])
-        v2 = (p3[0] - p2[0], p3[1] - p2[1])
+        v1 = ((p1[0] - p2[0]) * self.pixel_spacing[0] / self.rescale_factor[0],
+              (p1[1] - p2[1]) * self.pixel_spacing[1] / self.rescale_factor[1])
+        v2 = ((p3[0] - p2[0]) * self.pixel_spacing[0] / self.rescale_factor[0],
+              (p3[1] - p2[1]) * self.pixel_spacing[1] / self.rescale_factor[1])
         angle = math.acos((v1[0] * v2[0] + v1[1] * v2[1]) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
         deg_angle = round(180 / math.pi * angle, 2)
         return deg_angle
@@ -128,12 +133,13 @@ class AngleCommand(ComplexCommand):
 
 
 class RectangleCommand(ComplexCommand):
-    def __init__(self, canvas, color, pixel_spacing):
+    def __init__(self, canvas, color, pixel_spacing, rescale_factor):
         ComplexCommand.__init__(self, canvas)
         self.color = color
         self.points = []
         self.confirmed = 0
         self.pixel_spacing = pixel_spacing
+        self.rescale_factor = rescale_factor
 
     class RectCommand(Command):
         def __init__(self, canvas, point1, point2, color):
@@ -195,23 +201,24 @@ class RectangleCommand(ComplexCommand):
         self.commands.append(text_command)
 
     def _calculate_area(self):
-        width = abs(self.points[0][0] - self.points[1][0]) * self.pixel_spacing[0]
-        height = abs(self.points[0][1] - self.points[1][1]) * self.pixel_spacing[1]
+        width = abs(self.points[0][0] - self.points[1][0]) * self.pixel_spacing[0] / self.rescale_factor[0]
+        height = abs(self.points[0][1] - self.points[1][1]) * self.pixel_spacing[1] / self.rescale_factor[1]
         return width * height
 
     def _calculate_perimeter(self):
-        width = abs(self.points[0][0] - self.points[1][0]) * self.pixel_spacing[0]
-        height = abs(self.points[0][1] - self.points[1][1]) * self.pixel_spacing[1]
+        width = abs(self.points[0][0] - self.points[1][0]) * self.pixel_spacing[0] / self.rescale_factor[0]
+        height = abs(self.points[0][1] - self.points[1][1]) * self.pixel_spacing[1] / self.rescale_factor[1]
         return 2 * (width + height)
 
 
 class EllipseCommand(ComplexCommand):
-    def __init__(self, canvas, color, pixel_spacing):
+    def __init__(self, canvas, color, pixel_spacing, rescale_factor):
         ComplexCommand.__init__(self, canvas)
         self.color = color
         self.points = []
         self.confirmed = 0
         self.pixel_spacing = pixel_spacing
+        self.rescale_factor = rescale_factor
 
     class OvalCommand(Command):
         def __init__(self, canvas, point1, point2, color):
@@ -273,24 +280,25 @@ class EllipseCommand(ComplexCommand):
         self.commands.append(text_command)
 
     def _calculate_area(self):
-        width = abs(self.points[0][0] - self.points[1][0]) / 2.0 * self.pixel_spacing[0]
-        height = abs(self.points[0][1] - self.points[1][1]) / 2.0 * self.pixel_spacing[1]
+        width = abs(self.points[0][0] - self.points[1][0]) / 2.0 * self.pixel_spacing[0] / self.rescale_factor[0]
+        height = abs(self.points[0][1] - self.points[1][1]) / 2.0 * self.pixel_spacing[1] / self.rescale_factor[1]
         return width * height * math.pi
 
     def _calculate_perimeter(self):
-        width = abs(self.points[0][0] - self.points[1][0]) / 2.0 * self.pixel_spacing[0]
-        height = abs(self.points[0][1] - self.points[1][1]) / 2.0 * self.pixel_spacing[1]
+        width = abs(self.points[0][0] - self.points[1][0]) / 2.0 * self.pixel_spacing[0] / self.rescale_factor[0]
+        height = abs(self.points[0][1] - self.points[1][1]) / 2.0 * self.pixel_spacing[1] / self.rescale_factor[1]
         h = ((width - height) ** 2) / ((width + height) ** 2)
         return math.pi * (width + height) * (1 + (3 * h) / (10 + math.sqrt(4 - 3 * h)))
 
 
 class DistanceCommand(ComplexCommand):
-    def __init__(self, canvas, color, pixel_spacing):
+    def __init__(self, canvas, color, pixel_spacing, rescale_factor):
         ComplexCommand.__init__(self, canvas)
         self.color = color
         self.points = []
         self.confirmed = 0
         self.pixel_spacing = pixel_spacing
+        self.rescale_factor = rescale_factor
 
     def add_point(self, point, final=False):
         if final:
@@ -340,6 +348,6 @@ class DistanceCommand(ComplexCommand):
         self.commands.append(text_command)
 
     def _calculate_length(self):
-        dx = (self.points[0][0] - self.points[1][0]) * self.pixel_spacing[0]
-        dy = (self.points[0][1] - self.points[1][1]) * self.pixel_spacing[1]
+        dx = (self.points[0][0] - self.points[1][0]) * self.pixel_spacing[0] / self.rescale_factor[0]
+        dy = (self.points[0][1] - self.points[1][1]) * self.pixel_spacing[1] / self.rescale_factor[1]
         return math.sqrt(dx ** 2 + dy ** 2)
