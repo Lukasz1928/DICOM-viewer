@@ -64,14 +64,14 @@ class LineCommand(Command):
 
 
 class AngleCommand(ComplexCommand):
-    def __init__(self, canvas, color, pixel_spacing, rescale_factor):
+    def __init__(self, canvas, color, pixel_spacing, rescale_factor, with_measurement=True):
         ComplexCommand.__init__(self, canvas)
         self.color = color
         self.points = []
         self.confirmed = 0
         self.pixel_spacing = pixel_spacing
         self.rescale_factor = rescale_factor
-
+        self.measure = with_measurement
 
     def add_point(self, point, final=False):
         if final:
@@ -97,7 +97,7 @@ class AngleCommand(ComplexCommand):
                 self.commands.append(command)
 
         finished = final and len(self.points) == 3
-        if finished:
+        if finished and self.measure:
             angle = self._calculate_angle()
             self._print_angle_label(angle)
         return finished
@@ -133,13 +133,14 @@ class AngleCommand(ComplexCommand):
 
 
 class RectangleCommand(ComplexCommand):
-    def __init__(self, canvas, color, pixel_spacing, rescale_factor):
+    def __init__(self, canvas, color, pixel_spacing, rescale_factor, with_measurement=True):
         ComplexCommand.__init__(self, canvas)
         self.color = color
         self.points = []
         self.confirmed = 0
         self.pixel_spacing = pixel_spacing
         self.rescale_factor = rescale_factor
+        self.measure = with_measurement
 
     class RectCommand(Command):
         def __init__(self, canvas, point1, point2, color):
@@ -177,7 +178,7 @@ class RectangleCommand(ComplexCommand):
                 command.execute()
                 self.commands.append(command)
         finished = final and len(self.points) == 2
-        if finished and self.pixel_spacing is not None:
+        if finished and self.measure:
             self._print_label()
         return finished
 
@@ -212,13 +213,14 @@ class RectangleCommand(ComplexCommand):
 
 
 class EllipseCommand(ComplexCommand):
-    def __init__(self, canvas, color, pixel_spacing, rescale_factor):
+    def __init__(self, canvas, color, pixel_spacing, rescale_factor, with_measurement=True):
         ComplexCommand.__init__(self, canvas)
         self.color = color
         self.points = []
         self.confirmed = 0
         self.pixel_spacing = pixel_spacing
         self.rescale_factor = rescale_factor
+        self.measure = with_measurement
 
     class OvalCommand(Command):
         def __init__(self, canvas, point1, point2, color):
@@ -256,7 +258,7 @@ class EllipseCommand(ComplexCommand):
                 command.execute()
                 self.commands.append(command)
         finished = final and len(self.points) == 2
-        if finished and self.pixel_spacing is not None:
+        if finished and self.measure:
             self._print_label()
         return finished
 
@@ -292,13 +294,14 @@ class EllipseCommand(ComplexCommand):
 
 
 class DistanceCommand(ComplexCommand):
-    def __init__(self, canvas, color, pixel_spacing, rescale_factor):
+    def __init__(self, canvas, color, pixel_spacing, rescale_factor, with_measurement=True):
         ComplexCommand.__init__(self, canvas)
         self.color = color
         self.points = []
         self.confirmed = 0
         self.pixel_spacing = pixel_spacing
         self.rescale_factor = rescale_factor
+        self.measure = with_measurement
 
     def add_point(self, point, final=False):
         if final:
@@ -321,7 +324,7 @@ class DistanceCommand(ComplexCommand):
                 command.execute()
                 self.commands.append(command)
         finished = final and len(self.points) == 2
-        if finished and self.pixel_spacing is not None:
+        if finished and self.measure:
             self._print_label()
         return finished
 

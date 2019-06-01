@@ -8,8 +8,9 @@ class Drawer:
         self.executor = executor
         self.prev_points = None
         self.color = 'red'
-        self.pixel_spacing = pixel_spacing
+        self.pixel_spacing = pixel_spacing if pixel_spacing is not None else [1, 1]
         self.rescale_factor = rescale_factor if rescale_factor is not None else [1, 1]
+        self.measure = False
         self.draw_command = None
 
     def draw_curve(self, event):
@@ -33,7 +34,8 @@ class Drawer:
             r = self.draw_command.add_point((x, y), final=event.type == '4' and event.num == 1)
         else:
             if event.type == '4' and event.num == 1:
-                self.draw_command = AngleCommand(self.canvas, self.color, self.pixel_spacing, self.rescale_factor)
+                self.draw_command = AngleCommand(self.canvas, self.color, self.pixel_spacing, self.rescale_factor,
+                                                 with_measurement=self.measure)
                 _ = self.draw_command.add_point((x, y), final=True)
                 r = self.draw_command.add_point((x, y))
                 self.executor.add(self.draw_command)
@@ -47,7 +49,8 @@ class Drawer:
             r = self.draw_command.add_point((x, y), final=event.type == '5' and event.num == 1)
         else:
             if event.type == '4' and event.num == 1:
-                self.draw_command = RectangleCommand(self.canvas, self.color, self.pixel_spacing, self.rescale_factor)
+                self.draw_command = RectangleCommand(self.canvas, self.color, self.pixel_spacing, self.rescale_factor,
+                                                     with_measurement=self.measure)
                 _ = self.draw_command.add_point((x, y), final=True)
                 r = self.draw_command.add_point((x, y))
                 self.executor.add(self.draw_command)
@@ -61,7 +64,8 @@ class Drawer:
             r = self.draw_command.add_point((x, y), final=event.type == '5' and event.num == 1)
         else:
             if event.type == '4' and event.num == 1:
-                self.draw_command = EllipseCommand(self.canvas, self.color, self.pixel_spacing, self.rescale_factor)
+                self.draw_command = EllipseCommand(self.canvas, self.color, self.pixel_spacing, self.rescale_factor,
+                                                   with_measurement=self.measure)
                 _ = self.draw_command.add_point((x, y), final=True)
                 r = self.draw_command.add_point((x, y))
                 self.executor.add(self.draw_command)
@@ -75,7 +79,8 @@ class Drawer:
             r = self.draw_command.add_point((x, y), final=event.type == '5' and event.num == 1)
         else:
             if event.type == '4' and event.num == 1:
-                self.draw_command = DistanceCommand(self.canvas, self.color, self.pixel_spacing, self.rescale_factor)
+                self.draw_command = DistanceCommand(self.canvas, self.color, self.pixel_spacing, self.rescale_factor,
+                                                    with_measurement=self.measure)
                 _ = self.draw_command.add_point((x, y), final=True)
                 r = self.draw_command.add_point((x, y))
                 self.executor.add(self.draw_command)
