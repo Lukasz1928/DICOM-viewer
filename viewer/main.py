@@ -40,6 +40,10 @@ class MainWindow:
         self.main.bind("<Control-z>", self.executor.undo)
         self.main.bind("<Control-Shift-Z>", self.executor.redo)
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> Fixed drawing active despite button being raised
     def _setup_initial_image(self):
         self.dir_path = ''
         self.display.set_default_image()
