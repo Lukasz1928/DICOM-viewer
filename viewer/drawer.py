@@ -1,12 +1,11 @@
 from viewer.command.command import LineCommand, ComplexCommand, AngleCommand, RectangleCommand, EllipseCommand, \
-    DistanceCommand
+    DistanceCommand, CurveCommand
 
 
 class Drawer:
     def __init__(self, canvas, executor, pixel_spacing=None, rescale_factor=None):
         self.canvas = canvas
         self.executor = executor
-        self.prev_points = None
         self.color = 'red'
         self.pixel_spacing = pixel_spacing if pixel_spacing is not None else [1, 1]
         self.rescale_factor = rescale_factor if rescale_factor is not None else [1, 1]
@@ -15,16 +14,18 @@ class Drawer:
 
     def draw_curve(self, event):
         x, y = event.x, event.y
-        if self.prev_points is not None:
-            dc = LineCommand(self.canvas, (x, y), self.prev_points, color=self.color)
-            self.draw_command.add_command(dc)
+        r = False
+        if self.draw_command is not None:
+            r = self.draw_command.add_point((x, y), final=event.type == '5' and event.num == 1)
         else:
-            self.draw_command = ComplexCommand(self.canvas)
-        self.prev_points = (x, y)
+            if event.type == '4' and event.num == 1:
+                self.draw_command = CurveCommand(self.canvas, self.color)
+                r = self.draw_command.add_point((x, y))
+        if r:
+            self.executor.add(self.draw_command)
+            self.reset()
 
-    def reset_curve(self, event):
-        self.prev_points = None
-        self.executor.add(self.draw_command)
+    def reset(self):
         self.draw_command = None
 
     def draw_angle(self, event):
@@ -38,9 +39,9 @@ class Drawer:
                                                  with_measurement=self.measure)
                 _ = self.draw_command.add_point((x, y), final=True)
                 r = self.draw_command.add_point((x, y))
-                self.executor.add(self.draw_command)
         if r:
-            self.draw_command = None
+            self.executor.add(self.draw_command)
+            self.reset()
 
     def draw_rectangle(self, event):
         x, y = event.x, event.y
@@ -55,7 +56,7 @@ class Drawer:
                 r = self.draw_command.add_point((x, y))
                 self.executor.add(self.draw_command)
         if r:
-            self.draw_command = None
+            self.reset()
 
     def draw_ellipse(self, event):
         x, y = event.x, event.y
@@ -68,9 +69,9 @@ class Drawer:
                                                    with_measurement=self.measure)
                 _ = self.draw_command.add_point((x, y), final=True)
                 r = self.draw_command.add_point((x, y))
-                self.executor.add(self.draw_command)
         if r:
-            self.draw_command = None
+            self.executor.add(self.draw_command)
+            self.reset()
 
     def draw_line(self, event):
         x, y = event.x, event.y
@@ -83,9 +84,9 @@ class Drawer:
                                                     with_measurement=self.measure)
                 _ = self.draw_command.add_point((x, y), final=True)
                 r = self.draw_command.add_point((x, y))
-                self.executor.add(self.draw_command)
         if r:
-            self.draw_command = None
+            self.executor.add(self.draw_command)
+            self.reset()
 
     def set_color(self, color):
         self.color = color

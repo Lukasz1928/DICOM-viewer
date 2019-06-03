@@ -22,10 +22,13 @@ class MainWindow:
         self.dcm = None
 
     def _setup_default_bindings(self):
+        self.canvas.unbind("<Motion>")
+        self.canvas.unbind("<B1-Motion>")
+        self.canvas.unbind("<ButtonPress-1>")
+        self.canvas.unbind("<ButtonRelease-1>")
+
         self.main.bind("<Control-z>", self.executor.undo)
         self.main.bind("<Control-Shift-Z>", self.executor.redo)
-        self.canvas.unbind("<B1-Motion>")
-        self.canvas.unbind("<ButtonRelease-1>")
 
     def _setup_initial_image(self):
         self._img = np.ndarray(self._canvas_dimensions())
@@ -51,11 +54,12 @@ class MainWindow:
         self.canvas.update()
 
     def _setup_drawing_bindings(self):
+        self.canvas.bind("<ButtonPress-1>", self.drawer.draw_curve)
         self.canvas.bind("<B1-Motion>", self.drawer.draw_curve)
-        self.canvas.bind("<ButtonRelease-1>", self.drawer.reset_curve)
+        self.canvas.bind("<ButtonRelease-1>", self.drawer.draw_curve)
 
     def _setup_angle_bindings(self):
-        self.canvas.bind("<Button-1>", self.drawer.draw_angle)
+        self.canvas.bind("<ButtonPress-1>", self.drawer.draw_angle)
         self.canvas.bind("<Motion>", self.drawer.draw_angle)
 
     def _setup_rectangle_bindings(self):
@@ -78,6 +82,7 @@ class MainWindow:
             self._setup_default_bindings()
             self.b.config(relief="raised")
         else:
+            self._reset_drawer()
             self._setup_drawing_bindings()
             self.b.config(relief="sunken")
 
@@ -90,6 +95,7 @@ class MainWindow:
             self._setup_default_bindings()
             self.angle_button.config(relief="raised")
         else:
+            self._reset_drawer()
             self._setup_angle_bindings()
             self.angle_button.config(relief="sunken")
 
@@ -98,6 +104,7 @@ class MainWindow:
             self._setup_default_bindings()
             self.rectangle_button.config(relief="raised")
         else:
+            self._reset_drawer()
             self._setup_rectangle_bindings()
             self.rectangle_button.config(relief="sunken")
 
@@ -106,6 +113,7 @@ class MainWindow:
             self._setup_default_bindings()
             self.ellipse_button.config(relief="raised")
         else:
+            self._reset_drawer()
             self._setup_ellipse_bindings()
             self.ellipse_button.config(relief="sunken")
 
@@ -114,8 +122,21 @@ class MainWindow:
             self._setup_default_bindings()
             self.line_button.config(relief="raised")
         else:
+            self._reset_drawer()
             self._setup_line_bindings()
             self.line_button.config(relief="sunken")
+
+    def _clear_button_command(self):
+        self.executor.reset()
+
+    def _reset_drawer(self):
+        self._setup_default_bindings()
+        self.drawer.reset()
+        self.b.config(relief="raised")
+        self.angle_button.config(relief="raised")
+        self.rectangle_button.config(relief="raised")
+        self.ellipse_button.config(relief="raised")
+        self.line_button.config(relief="raised")
 
     def _setup_menu(self):
         self.b = tk.Button(self.main, text="Draw", command=self._draw_button_command, relief="raised")
@@ -130,6 +151,8 @@ class MainWindow:
         self.ellipse_button.grid(row=0, column=4)
         self.line_button = tk.Button(self.main, text="Line", command=self._line_button_command, relief="raised")
         self.line_button.grid(row=0, column=5)
+        self.clear_button = tk.Button(self.main, text="Clear", command=self._clear_button_command, relief="raised")
+        self.clear_button.grid(row=0, column=6)
 
     def _open_file(self):
         self.dcm = read_dicom()

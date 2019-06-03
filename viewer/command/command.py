@@ -32,6 +32,21 @@ class ComplexCommand(Command):
             c.undo()
 
 
+class CurveCommand(ComplexCommand):
+    def __init__(self, canvas, color):
+        ComplexCommand.__init__(self, canvas)
+        self.color = color
+        self.prev_point = None
+
+    def add_point(self, point, final=False):
+        if self.prev_point is not None:
+            dc = LineCommand(self.canvas, self.prev_point, point, self.color)
+            dc.execute()
+            self.commands.append(dc)
+        self.prev_point = point
+        return final
+
+
 class TextCommand(Command):
     def __init__(self, canvas, text, color, location):
         self.id = None
