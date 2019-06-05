@@ -1,5 +1,6 @@
 from viewer.command.command import LineCommand, ComplexCommand, AngleCommand, RectangleCommand, EllipseCommand, \
     DistanceCommand, CurveCommand
+from viewer.command.status import CommandStatus
 
 
 class Drawer:
@@ -14,15 +15,18 @@ class Drawer:
 
     def draw_curve(self, event):
         x, y = event.x, event.y
-        r = False
+        r = None
         if self.draw_command is not None:
             r = self.draw_command.add_point((x, y), final=event.type == '5' and event.num == 1)
         else:
             if event.type == '4' and event.num == 1:
                 self.draw_command = CurveCommand(self.canvas, self.color)
                 r = self.draw_command.add_point((x, y))
-        if r:
+        if r == CommandStatus.SUCCESS:
             self.executor.add(self.draw_command)
+            self.reset()
+        elif r == CommandStatus.FAIL:
+            self.draw_command.undo()
             self.reset()
 
     def reset(self):
@@ -30,7 +34,7 @@ class Drawer:
 
     def draw_angle(self, event):
         x, y = event.x, event.y
-        r = False
+        r = None
         if self.draw_command is not None:
             r = self.draw_command.add_point((x, y), final=event.type == '4' and event.num == 1)
         else:
@@ -39,13 +43,16 @@ class Drawer:
                                                  with_measurement=self.measure)
                 _ = self.draw_command.add_point((x, y), final=True)
                 r = self.draw_command.add_point((x, y))
-        if r:
+        if r == CommandStatus.SUCCESS:
             self.executor.add(self.draw_command)
+            self.reset()
+        elif r == CommandStatus.FAIL:
+            self.draw_command.undo()
             self.reset()
 
     def draw_rectangle(self, event):
         x, y = event.x, event.y
-        r = False
+        r = None
         if self.draw_command is not None:
             r = self.draw_command.add_point((x, y), final=event.type == '5' and event.num == 1)
         else:
@@ -55,12 +62,16 @@ class Drawer:
                 _ = self.draw_command.add_point((x, y), final=True)
                 r = self.draw_command.add_point((x, y))
                 self.executor.add(self.draw_command)
-        if r:
+        if r == CommandStatus.SUCCESS:
+            self.executor.add(self.draw_command)
+            self.reset()
+        elif r == CommandStatus.FAIL:
+            self.draw_command.undo()
             self.reset()
 
     def draw_ellipse(self, event):
         x, y = event.x, event.y
-        r = False
+        r = None
         if self.draw_command is not None:
             r = self.draw_command.add_point((x, y), final=event.type == '5' and event.num == 1)
         else:
@@ -69,13 +80,16 @@ class Drawer:
                                                    with_measurement=self.measure)
                 _ = self.draw_command.add_point((x, y), final=True)
                 r = self.draw_command.add_point((x, y))
-        if r:
+        if r == CommandStatus.SUCCESS:
             self.executor.add(self.draw_command)
+            self.reset()
+        elif r == CommandStatus.FAIL:
+            self.draw_command.undo()
             self.reset()
 
     def draw_line(self, event):
         x, y = event.x, event.y
-        r = False
+        r = None
         if self.draw_command is not None:
             r = self.draw_command.add_point((x, y), final=event.type == '5' and event.num == 1)
         else:
@@ -84,8 +98,11 @@ class Drawer:
                                                     with_measurement=self.measure)
                 _ = self.draw_command.add_point((x, y), final=True)
                 r = self.draw_command.add_point((x, y))
-        if r:
+        if r == CommandStatus.SUCCESS:
             self.executor.add(self.draw_command)
+            self.reset()
+        elif r == CommandStatus.FAIL:
+            self.draw_command.undo()
             self.reset()
 
     def set_color(self, color):

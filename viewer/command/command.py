@@ -2,6 +2,10 @@ import math
 from abc import ABC
 import numpy as np
 
+from viewer.command.status import CommandStatus
+from viewer.math.utils import vectors_differ, radians_to_degrees, points_to_vector, normalize_vector, sum_vectors, \
+    vector_length, vectors_angle
+
 
 class Command(ABC):
     def execute(self):
@@ -111,11 +115,22 @@ class AngleCommand(ComplexCommand):
                 command.execute()
                 self.commands.append(command)
 
-        finished = final and len(self.points) == 3
-        if finished and self.measure:
+        status = self._get_execution_status(final)
+        if status == CommandStatus.SUCCESS and self.measure:
             angle = self._calculate_angle()
             self._print_angle_label(angle)
-        return finished
+        return status
+
+    def _is_correct(self):
+        return len(self.points) == 3 and vectors_differ(self.points[0], self.points[1]) and vectors_differ(
+            self.points[1], self.points[2])
+
+    def _get_execution_status(self, final):
+        if final and self._is_correct():
+            return CommandStatus.SUCCESS
+        if final and len(self.points) == 3 and not self._is_correct():
+            return CommandStatus.FAIL
+        return CommandStatus.IN_PROGRESS
 
     def _calculate_angle(self):
         p1, p2, p3 = self.points[0], self.points[1], self.points[2]
@@ -123,8 +138,8 @@ class AngleCommand(ComplexCommand):
               (p1[1] - p2[1]) * self.pixel_spacing[1] / self.rescale_factor[1])
         v2 = ((p3[0] - p2[0]) * self.pixel_spacing[0] / self.rescale_factor[0],
               (p3[1] - p2[1]) * self.pixel_spacing[1] / self.rescale_factor[1])
-        angle = math.acos((v1[0] * v2[0] + v1[1] * v2[1]) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
-        deg_angle = round(180 / math.pi * angle, 2)
+        angle = vectors_angle(v1, v2)
+        deg_angle = round(radians_to_degrees(angle), 2)
         return deg_angle
 
     def _print_angle_label(self, angle):
@@ -135,15 +150,13 @@ class AngleCommand(ComplexCommand):
 
     def _calculate_label_location(self):
         distance = 10
-        v1 = (self.points[1][0] - self.points[0][0], self.points[1][1] - self.points[0][1])
-        v2 = (self.points[1][0] - self.points[2][0], self.points[1][1] - self.points[2][1])
-        norm_v1 = [x / np.linalg.norm(v1) for x in v1]
-        norm_v2 = [x / np.linalg.norm(v2) for x in v2]
-        label_vector = (norm_v1[0] + norm_v2[0], norm_v1[1] + norm_v2[1])
-        norm_label_vector = [x / np.linalg.norm(label_vector) for x in label_vector]
+        v1, v2 = points_to_vector(self.points[1], self.points[0]), points_to_vector(self.points[1], self.points[2])
+        norm_v1, norm_v2 = normalize_vector(v1), normalize_vector(v2)
+        norm_label_vector = normalize_vector(sum_vectors(norm_v1, norm_v2)) if vector_length(
+            sum_vectors(norm_v1, norm_v2)) != 0 else (1.0 / math.sqrt(2.0), 1.0 / math.sqrt(2.0))
         dx = distance * norm_label_vector[0]
         dy = distance * norm_label_vector[1]
-        loc = (self.points[1][0] + dx, self.points[1][1] + dy)
+        loc = sum_vectors(self.points[1], (dx, dy))
         return loc
 
 
@@ -192,10 +205,21 @@ class RectangleCommand(ComplexCommand):
                 command = self.RectCommand(self.canvas, self.points[0], self.points[1], self.color)
                 command.execute()
                 self.commands.append(command)
-        finished = final and len(self.points) == 2
-        if finished and self.measure:
+        status = self._get_execution_status(final)
+        if status == CommandStatus.SUCCESS and self.measure:
             self._print_label()
-        return finished
+        return status
+
+    def _is_correct(self):
+        return len(self.points) == 2 and abs(self.points[0][0] - self.points[1][0]) > 0 and abs(
+            self.points[0][1] - self.points[1][1]) > 0
+
+    def _get_execution_status(self, final):
+        if final and self._is_correct():
+            return CommandStatus.SUCCESS
+        if final and len(self.points) == 2 and not self._is_correct():
+            return CommandStatus.FAIL
+        return CommandStatus.IN_PROGRESS
 
     def _calculate_label_location(self):
         dx = 0
@@ -272,10 +296,10 @@ class EllipseCommand(ComplexCommand):
                 command = self.OvalCommand(self.canvas, self.points[0], self.points[1], self.color)
                 command.execute()
                 self.commands.append(command)
-        finished = final and len(self.points) == 2
-        if finished and self.measure:
+        status = self._get_execution_status(final)
+        if status == CommandStatus.SUCCESS and self.measure:
             self._print_label()
-        return finished
+        return status
 
     def _calculate_label_location(self):
         dx = 0
@@ -287,6 +311,17 @@ class EllipseCommand(ComplexCommand):
             y = y - 2 * dy
         return x, y
 
+    def _is_correct(self):
+        return len(self.points) == 2 and abs(self.points[0][0] - self.points[1][0]) > 0 and abs(
+            self.points[0][1] - self.points[1][1]) > 0
+
+    def _get_execution_status(self, final):
+        if final and self._is_correct():
+            return CommandStatus.SUCCESS
+        if final and len(self.points) == 2 and not self._is_correct():
+            return CommandStatus.FAIL
+        return CommandStatus.IN_PROGRESS
+
     def _print_label(self):
         loc = self._calculate_label_location()
         area = round(self._calculate_area(), 2)
@@ -297,15 +332,18 @@ class EllipseCommand(ComplexCommand):
         self.commands.append(text_command)
 
     def _calculate_area(self):
-        width = abs(self.points[0][0] - self.points[1][0]) / 2.0 * self.pixel_spacing[0] / self.rescale_factor[0]
-        height = abs(self.points[0][1] - self.points[1][1]) / 2.0 * self.pixel_spacing[1] / self.rescale_factor[1]
+        width, height = self._calculate_dimensions()
         return width * height * math.pi
 
     def _calculate_perimeter(self):
-        width = abs(self.points[0][0] - self.points[1][0]) / 2.0 * self.pixel_spacing[0] / self.rescale_factor[0]
-        height = abs(self.points[0][1] - self.points[1][1]) / 2.0 * self.pixel_spacing[1] / self.rescale_factor[1]
+        width, height = self._calculate_dimensions()
         h = ((width - height) ** 2) / ((width + height) ** 2)
         return math.pi * (width + height) * (1 + (3 * h) / (10 + math.sqrt(4 - 3 * h)))
+
+    def _calculate_dimensions(self):
+        width = abs(self.points[0][0] - self.points[1][0]) / 2.0 * self.pixel_spacing[0] / self.rescale_factor[0]
+        height = abs(self.points[0][1] - self.points[1][1]) / 2.0 * self.pixel_spacing[1] / self.rescale_factor[1]
+        return width, height
 
 
 class DistanceCommand(ComplexCommand):
@@ -338,10 +376,20 @@ class DistanceCommand(ComplexCommand):
                 command = LineCommand(self.canvas, self.points[0], self.points[1], self.color)
                 command.execute()
                 self.commands.append(command)
-        finished = final and len(self.points) == 2
-        if finished and self.measure:
+        status = self._get_execution_status(final)
+        if status == CommandStatus.SUCCESS and self.measure:
             self._print_label()
-        return finished
+        return status
+
+    def _is_correct(self):
+        return len(self.points) == 2 and vector_length(points_to_vector(self.points[0], self.points[1])) > 1
+
+    def _get_execution_status(self, final):
+        if final and self._is_correct():
+            return CommandStatus.SUCCESS
+        if final and len(self.points) == 2 and not self._is_correct():
+            return CommandStatus.FAIL
+        return CommandStatus.IN_PROGRESS
 
     def _calculate_label_location(self):
         x_r, y_r = max(self.points, key=lambda p: p[0])
@@ -368,4 +416,4 @@ class DistanceCommand(ComplexCommand):
     def _calculate_length(self):
         dx = (self.points[0][0] - self.points[1][0]) * self.pixel_spacing[0] / self.rescale_factor[0]
         dy = (self.points[0][1] - self.points[1][1]) * self.pixel_spacing[1] / self.rescale_factor[1]
-        return math.sqrt(dx ** 2 + dy ** 2)
+        return vector_length((dx, dy))
