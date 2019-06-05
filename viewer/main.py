@@ -44,10 +44,10 @@ class MainWindow:
         self.preview_frame.grid(row=1, column=0)
         for i in range(0, self.preview_count):
             tk.Label(master=self.preview_frame, text=str(i)).grid(row=0, column=i + 1)
-        prev_button = tk.Button(master=self.preview_frame, text="<", command=self.previous_preview, relief="raised")
-        prev_button.grid(row=0, column=0)
-        next_button = tk.Button(master=self.preview_frame, text=">", command=self.next_preview, relief="raised")
-        next_button.grid(row=0, column=self.preview_count + 1)
+        tk.Button(master=self.preview_frame, text="<", command=self.previous_preview, relief="raised") \
+            .grid(row=0, column=0)
+        tk.Button(master=self.preview_frame, text=">", command=self.next_preview, relief="raised") \
+            .grid(row=0, column=self.preview_count + 1)
         self.previews = [tk.Canvas(self.preview_frame, width=64, height=64) for _ in range(0, self.preview_count)]
         self._img_previews = [np.ndarray((64, 64)) for _ in range(0, self.preview_count)]
         self.image_previews = [Image.fromarray(self._img_previews[i]).resize((64, 64)) for i in
@@ -55,10 +55,18 @@ class MainWindow:
         self.img_previews = [ImageTk.PhotoImage(image=self.image_previews[i], master=self.main) for i in
                              range(0, self.preview_count)]
         self.image_on_canvas_previews = []
+        self.preview_labels = [tk.Label(self.preview_frame, text='a', height=1, width=6) for _ in range(0, self.preview_count)]
         for i in range(0, self.preview_count):
+            self.preview_labels[i].grid(row=1, column=i + 1)
+            # self.preview_labels[i].bind("<ButtonRelease-1>",
+            #                             lambda event: self.mock(event, self.preview_labels[i]['text']))
             self.previews[i].grid(row=0, column=i + 1)
             self.image_on_canvas_previews.append(self.previews[i].create_image(0, 0, anchor=tk.NW,
                                                                                image=self.img_previews[i]))
+
+    def _mock_event(self, event, *args):
+        print(event)
+        print(args)
 
     def setup_menubar(self):
         menubar = tk.Menu(self.main)
@@ -144,12 +152,12 @@ class MainWindow:
             self.load_preview(index, path)
 
     def load_preview(self, index, path):
-        print(path)
         self._img_previews[index] = pydicom.dcmread(path).pixel_array
         self.image_previews[index] = Image.fromarray(self._img_previews[index]) \
             .resize((self.previews[index].winfo_width(), self.previews[index].winfo_height()))
         self.img_previews[index] = ImageTk.PhotoImage(image=self.image_previews[index])
         self.previews[index].itemconfig(self.image_on_canvas_previews[index], image=self.img_previews[index])
+        self.preview_labels[index].config(text=path.split('/')[-1].split('.')[0])
 
 
 def main():
