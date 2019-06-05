@@ -48,7 +48,7 @@ class CurveCommand(ComplexCommand):
             dc.execute()
             self.commands.append(dc)
         self.prev_point = point
-        return final
+        return CommandStatus.SUCCESS if final else CommandStatus.IN_PROGRESS
 
 
 class TextCommand(Command):
