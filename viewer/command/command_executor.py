@@ -34,6 +34,10 @@ class CommandExecutor:
             command.execute()
             self.done.append(command)
 
+    def reset(self):
+        self.undo_all()
+        self.clear()
+
     def undo_all(self):
         while len(self.done) > 0:
             self.undo()
