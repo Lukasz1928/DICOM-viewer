@@ -67,6 +67,8 @@ class MainWindow:
             self.preview_labels[i].grid(row=1, column=i + 1)
             self.preview_labels[i].bind("<ButtonRelease-1>",
                                         self.get_load_preview_image(i))
+            self.previews[i].bind("<ButtonRelease-1>",
+                                  self.get_load_preview_image(i))
             self.previews[i].grid(row=0, column=i + 1)
             self.image_on_canvas_previews.append(self.previews[i].create_image(0, 0, anchor=tk.NW,
                                                                                image=self.img_previews[i]))
