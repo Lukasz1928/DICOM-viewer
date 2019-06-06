@@ -38,6 +38,7 @@ class MainWindow:
         self.image_on_canvas = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.img)
 
     def setup_preview(self):
+        self.is_label_clickable = False
         self.preview_count = 6
         self.offset = 0
         self.preview_frame = tk.Frame(master=self.main, height=64, width=512)
@@ -53,7 +54,8 @@ class MainWindow:
         self.img_previews = [ImageTk.PhotoImage(image=self.image_previews[i], master=self.main) for i in
                              range(0, self.preview_count)]
         self.image_on_canvas_previews = []
-        self.preview_labels = [tk.Label(self.preview_frame, text='a', height=1, width=6) for _ in range(0, self.preview_count)]
+        self.preview_labels = [tk.Label(self.preview_frame, text='a', height=1, width=6) for _ in
+                               range(0, self.preview_count)]
         for i in range(0, self.preview_count):
             self.preview_labels[i].grid(row=1, column=i + 1)
             self.preview_labels[i].bind("<ButtonRelease-1>",
@@ -64,7 +66,8 @@ class MainWindow:
 
     def get_load_preview_image(self, image_number):
         def _load_preview_image(event):
-            print(self.preview_labels[image_number]['text'])
+            if self.is_label_clickable:
+                self.open_image(self.preview_labels[image_number]['text']+'.dcm')
         return _load_preview_image
 
     def setup_menubar(self):
@@ -111,12 +114,16 @@ class MainWindow:
                                           filetypes=(("DICOM files", "*.dcm"),))
         if path != '':
             self.dir_path = "/".join(path.split("/")[:-1]) + "/"
-            self._img = pydicom.dcmread(path).pixel_array
-            dicom_files = self._list_dicoms_from_dir()
-            self.load_previews(dicom_files[self.offset:self.offset + self.preview_count])
-            self.update_window()
-            self.executor.undo_all()
-            self.executor.clear()
+            self.open_image(path.split("/")[-1])
+
+    def open_image(self, path):
+        self.is_label_clickable = True
+        self._img = pydicom.dcmread(self.dir_path + path).pixel_array
+        dicom_files = self._list_dicoms_from_dir()
+        self.load_previews(dicom_files[self.offset:self.offset + self.preview_count])
+        self.update_window()
+        self.executor.undo_all()
+        self.executor.clear()
 
     def _list_dicoms_from_dir(self):
         return list(map(lambda name: self.dir_path + name,
