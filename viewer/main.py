@@ -42,8 +42,6 @@ class MainWindow:
         self.offset = 0
         self.preview_frame = tk.Frame(master=self.main, height=64, width=512)
         self.preview_frame.grid(row=1, column=0)
-        for i in range(0, self.preview_count):
-            tk.Label(master=self.preview_frame, text=str(i)).grid(row=0, column=i + 1)
         tk.Button(master=self.preview_frame, text="<", command=self.previous_preview, relief="raised") \
             .grid(row=0, column=0)
         tk.Button(master=self.preview_frame, text=">", command=self.next_preview, relief="raised") \
@@ -58,15 +56,16 @@ class MainWindow:
         self.preview_labels = [tk.Label(self.preview_frame, text='a', height=1, width=6) for _ in range(0, self.preview_count)]
         for i in range(0, self.preview_count):
             self.preview_labels[i].grid(row=1, column=i + 1)
-            # self.preview_labels[i].bind("<ButtonRelease-1>",
-            #                             lambda event: self.mock(event, self.preview_labels[i]['text']))
+            self.preview_labels[i].bind("<ButtonRelease-1>",
+                                        self.get_load_preview_image(i))
             self.previews[i].grid(row=0, column=i + 1)
             self.image_on_canvas_previews.append(self.previews[i].create_image(0, 0, anchor=tk.NW,
                                                                                image=self.img_previews[i]))
 
-    def _mock_event(self, event, *args):
-        print(event)
-        print(args)
+    def get_load_preview_image(self, image_number):
+        def _load_preview_image(event):
+            print(self.preview_labels[image_number]['text'])
+        return _load_preview_image
 
     def setup_menubar(self):
         menubar = tk.Menu(self.main)
