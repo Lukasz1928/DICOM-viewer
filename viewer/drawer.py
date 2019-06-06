@@ -61,7 +61,6 @@ class Drawer:
                                                      with_measurement=self.measure)
                 _ = self.draw_command.add_point((x, y), final=True)
                 r = self.draw_command.add_point((x, y))
-                self.executor.add(self.draw_command)
         if r == CommandStatus.SUCCESS:
             self.executor.add(self.draw_command)
             self.reset()

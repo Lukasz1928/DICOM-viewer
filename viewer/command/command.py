@@ -1,6 +1,5 @@
 import math
 from abc import ABC
-import numpy as np
 
 from viewer.command.status import CommandStatus
 from viewer.math.utils import vectors_differ, radians_to_degrees, points_to_vector, normalize_vector, sum_vectors, \
