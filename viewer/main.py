@@ -77,7 +77,6 @@ class MainWindow:
         def _load_preview_image(event):
             if self.is_label_clickable:
                 self._open_image(self.preview_labels[image_number]['text'] + '.dcm')
-
         return _load_preview_image
 
     def _setup_menubar(self):
@@ -254,7 +253,7 @@ class MainWindow:
         if not self.dir_path:
             return
         dicom_files = self._list_dicoms_from_dir()
-        if self.offset < len(dicom_files):
+        if self.offset < len(dicom_files) - self.preview_count:
             self.offset += 1
             self.load_previews(dicom_files[self.offset:self.offset + self.preview_count])
 
