@@ -43,7 +43,6 @@ class MainWindow:
         self.image_on_canvas = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.img)
 
     def _setup_preview(self):
-        self.is_label_clickable = False
         self.preview_count = 6
         self.offset = 0
         self.preview_frame = tk.Frame(master=self.main, height=64, width=512)
@@ -61,7 +60,7 @@ class MainWindow:
         self.img_previews = [ImageTk.PhotoImage(image=self.image_previews[i], master=self.main) for i in
                              range(0, self.preview_count)]
         self.image_on_canvas_previews = []
-        self.preview_labels = [tk.Label(self.preview_frame, text='a', height=1, width=6) for _ in
+        self.preview_labels = [tk.Label(self.preview_frame, text='', height=1, width=6) for _ in
                                range(0, self.preview_count)]
         for i in range(0, self.preview_count):
             self.preview_labels[i].grid(row=1, column=i + 1)
@@ -75,8 +74,8 @@ class MainWindow:
 
     def get_load_preview_image(self, image_number):
         def _load_preview_image(event):
-            if self.is_label_clickable:
-                self._open_image(self.preview_labels[image_number]['text'] + '.dcm')
+            self._open_image(self.preview_labels[image_number]['text'] + '.dcm')
+
         return _load_preview_image
 
     def _setup_menubar(self):
@@ -200,18 +199,20 @@ class MainWindow:
         self.clear_button.grid(row=0, column=6)
 
     def _open_image(self, name):
-        path = self.dir_path + name
-        self.dcm = pydicom.dcmread(path)
-        self._draw_image()
+        if name != '.dcm':
+            path = self.dir_path + name
+            self.dcm = pydicom.dcmread(path)
+            self._draw_image()
 
     def _open_file(self):
         self.dcm, path = read_dicom()
+        if not path:
+            return
         self.dir_path = "/".join(path.split("/")[:-1]) + "/"
         if self.dcm is not None:
             self._draw_image()
 
     def _draw_image(self):
-        self.is_label_clickable = True
         raw_image = self.dcm.pixel_array
 
         dicom_files = self._list_dicoms_from_dir()
@@ -260,14 +261,19 @@ class MainWindow:
     def load_previews(self, image_paths):
         for index, path in enumerate(image_paths):
             self.load_preview(index, path)
+        for index in range(len(image_paths), self.preview_count):
+            self.load_preview(index, '')
 
     def load_preview(self, index, path):
-        self._img_previews[index] = pydicom.dcmread(path).pixel_array
+        if path:
+            self._img_previews[index] = pydicom.dcmread(path).pixel_array
+        else:
+            self._img_previews[index].fill(self.color)
         self.image_previews[index] = Image.fromarray(self._img_previews[index]) \
             .resize((self.previews[index].winfo_width(), self.previews[index].winfo_height()))
         self.img_previews[index] = ImageTk.PhotoImage(image=self.image_previews[index])
         self.previews[index].itemconfig(self.image_on_canvas_previews[index], image=self.img_previews[index])
-        self.preview_labels[index].config(text=path.split('/')[-1].split('.')[0])
+        self.preview_labels[index].config(text=path.split('/')[-1].split('.')[0] if path else '')
 
 
 def main():
