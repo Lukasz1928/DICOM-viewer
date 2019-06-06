@@ -1,6 +1,5 @@
 import os
 import tkinter as tk
-from tkinter import filedialog
 from tkinter.colorchooser import askcolor
 
 import numpy as np
@@ -16,10 +15,10 @@ class MainWindow:
 
     def __init__(self, main: tk.Tk):
         self.main = main
-        self.setup_preview()
         self._setup_canvas()
         self._setup_default_bindings()
         self._setup_initial_image()
+        self._setup_preview()
         self._setup_menubar()
         self._setup_menu()
 
@@ -43,7 +42,7 @@ class MainWindow:
         self.img = ImageTk.PhotoImage(image=self.image, master=self.main)
         self.image_on_canvas = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.img)
 
-    def setup_preview(self):
+    def _setup_preview(self):
         self.is_label_clickable = False
         self.preview_count = 6
         self.offset = 0
@@ -55,6 +54,8 @@ class MainWindow:
             .grid(row=0, column=self.preview_count + 1)
         self.previews = [tk.Canvas(self.preview_frame, width=64, height=64) for _ in range(0, self.preview_count)]
         self._img_previews = [np.ndarray((64, 64)) for _ in range(0, self.preview_count)]
+        for _img in self._img_previews:
+            _img.fill(self.color)
         self.image_previews = [Image.fromarray(self._img_previews[i]).resize((64, 64)) for i in
                                range(0, self.preview_count)]
         self.img_previews = [ImageTk.PhotoImage(image=self.image_previews[i], master=self.main) for i in
@@ -73,7 +74,8 @@ class MainWindow:
     def get_load_preview_image(self, image_number):
         def _load_preview_image(event):
             if self.is_label_clickable:
-                self.open_image(self.preview_labels[image_number]['text']+'.dcm')
+                self._open_image(self.preview_labels[image_number]['text'] + '.dcm')
+
         return _load_preview_image
 
     def _setup_menubar(self):
@@ -182,47 +184,47 @@ class MainWindow:
         self.color_button = tk.Button(self.main, text="Select color", command=self._color_button_command,
                                       relief="raised")
         self.color_button.grid(row=0, column=1)
-        self.angle_button = tk.Button(self.main, text="Measure angle", command=self._angle_button_command, relief="raised")
+        self.angle_button = tk.Button(self.main, text="Measure angle", command=self._angle_button_command,
+                                      relief="raised")
         self.angle_button.grid(row=0, column=2)
-        self.rectangle_button = tk.Button(self.main, text="Rectangle", command=self._rectangle_button_command, relief="raised")
+        self.rectangle_button = tk.Button(self.main, text="Rectangle", command=self._rectangle_button_command,
+                                          relief="raised")
         self.rectangle_button.grid(row=0, column=3)
-        self.ellipse_button = tk.Button(self.main, text="Ellipse", command=self._ellipse_button_command, relief="raised")
+        self.ellipse_button = tk.Button(self.main, text="Ellipse", command=self._ellipse_button_command,
+                                        relief="raised")
         self.ellipse_button.grid(row=0, column=4)
         self.line_button = tk.Button(self.main, text="Line", command=self._line_button_command, relief="raised")
         self.line_button.grid(row=0, column=5)
         self.clear_button = tk.Button(self.main, text="Clear", command=self._clear_button_command, relief="raised")
         self.clear_button.grid(row=0, column=6)
 
+    def _open_image(self, name):
+        path = self.dir_path + name
+        self.dcm = pydicom.dcmread(path)
+        self._draw_image()
+
     def _open_file(self):
-        self.dcm = read_dicom()
+        self.dcm, path = read_dicom()
+        self.dir_path = "/".join(path.split("/")[:-1]) + "/"
         if self.dcm is not None:
-            raw_image = self.dcm.pixel_array
+            self._draw_image()
 
-            self.drawer.pixel_spacing = self.dcm.data_element("PixelSpacing").value
-
-            self.drawer.rescale_factor = (self._canvas_dimensions()[0] / self.dcm.pixel_array.shape[0],
-                                          self._canvas_dimensions()[1] / self.dcm.pixel_array.shape[1])
-            self.drawer.measure = True
-
-            self.image = Image.fromarray(raw_image).resize(self._canvas_dimensions())
-            self.img = ImageTk.PhotoImage(image=self.image)
-            self.canvas.itemconfig(self.image_on_canvas, image=self.img)
-            self.executor.undo_all()
-            self.executor.clear()
-    def open_file(self):
-        self.offset = 0
-        path = filedialog.askopenfilename(initialdir=".", title="Select file",
-                                          filetypes=(("DICOM files", "*.dcm"),))
-        if path != '':
-            self.dir_path = "/".join(path.split("/")[:-1]) + "/"
-            self.open_image(path.split("/")[-1])
-
-    def open_image(self, path):
+    def _draw_image(self):
         self.is_label_clickable = True
-        self._img = pydicom.dcmread(self.dir_path + path).pixel_array
+        raw_image = self.dcm.pixel_array
+
         dicom_files = self._list_dicoms_from_dir()
         self.load_previews(dicom_files[self.offset:self.offset + self.preview_count])
-        self.update_window()
+
+        self.drawer.pixel_spacing = self.dcm.data_element("PixelSpacing").value
+
+        self.drawer.rescale_factor = (self._canvas_dimensions()[0] / self.dcm.pixel_array.shape[0],
+                                      self._canvas_dimensions()[1] / self.dcm.pixel_array.shape[1])
+        self.drawer.measure = True
+
+        self.image = Image.fromarray(raw_image).resize(self._canvas_dimensions())
+        self.img = ImageTk.PhotoImage(image=self.image)
+        self.canvas.itemconfig(self.image_on_canvas, image=self.img)
         self.executor.undo_all()
         self.executor.clear()
 
