@@ -1,4 +1,5 @@
 import tkinter as tk
+
 import numpy as np
 from PIL import Image, ImageTk
 
@@ -12,6 +13,7 @@ class DicomImageDisplay:
         self.window_centre = None
         self.root = root
         self.image = None
+        self.text_id = None
 
         self.prev_coords = None
 
@@ -50,12 +52,30 @@ class DicomImageDisplay:
     def _coords_to_window_params(self, coords):
         dx = coords[0] - self.prev_coords[0]
         dy = coords[1] - self.prev_coords[1]
-        return max(1, self.window_width + 5 * dx), max(1, self.window_centre + 5 * dy)
+        return max(1, self.window_width + 2 * dx), max(1, self.window_centre + 2 * dy)
 
-    def _update_image(self):
+    def _update_image(self, print_window_params=True):
         windowed_image = self.apply_window(self.original_image)
         self.image = self._np_array_to_image(windowed_image)
         self.canvas.itemconfig(self.image_id, image=self.image)
+        if print_window_params:
+            text = "L: {:.2f}\nW: {:.2f}".format(round(self.window_centre, 2), round(self.window_width), 2)
+            color = self._calculate_params_label_text_color()
+            if self.text_id is None:
+                self.text_id = self.canvas.create_text(*self._calculate_params_label_location(), text=text,
+                                                       font=('Consolas', 12), fill=color)
+            else:
+                self.canvas.itemconfig(self.text_id, text=text)
+
+    def _calculate_params_label_location(self):
+        x, y = self.canvas_dimensions()
+        return x - 50, y - 25
+
+    def _calculate_params_label_text_color(self):
+        x, y = self.canvas_dimensions()
+        xi, yi = self.original_image.shape[1], self.original_image.shape[0]
+        avg = np.mean(self.original_image[int(yi - (50.0 * yi / y)):, int(xi - (100.0 * xi / x)):])
+        return '#ffffff' if avg < 150 else '#000000'
 
     def _np_array_to_image(self, img):
         image = Image.fromarray(img).resize(self.canvas_dimensions())
