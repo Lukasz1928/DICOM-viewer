@@ -1,7 +1,9 @@
+import os
 import tkinter as tk
 from tkinter.colorchooser import askcolor
 
 import numpy as np
+import pydicom
 from PIL import Image, ImageTk
 
 from viewer.command.command_executor import CommandExecutor
@@ -16,6 +18,7 @@ class MainWindow:
         self._setup_canvas()
         self._setup_default_bindings()
         self._setup_initial_image()
+        self._setup_preview()
         self._setup_menubar()
         self._setup_menu()
 
@@ -31,12 +34,49 @@ class MainWindow:
         self.main.bind("<Control-Shift-Z>", self.executor.redo)
 
     def _setup_initial_image(self):
+        self.dir_path = ''
         self._img = np.ndarray(self._canvas_dimensions())
         self.color = 255
         self._img.fill(self.color)
         self.image = Image.fromarray(self._img).resize(self._canvas_dimensions())
         self.img = ImageTk.PhotoImage(image=self.image, master=self.main)
         self.image_on_canvas = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.img)
+
+    def _setup_preview(self):
+        self.preview_count = 6
+        self.offset = 0
+        self.preview_frame = tk.Frame(master=self.main, height=64, width=512)
+        self.preview_frame.grid(row=1, column=0)
+        tk.Button(master=self.preview_frame, text="<", command=self.previous_preview, relief="raised") \
+            .grid(row=0, column=0)
+        tk.Button(master=self.preview_frame, text=">", command=self.next_preview, relief="raised") \
+            .grid(row=0, column=self.preview_count + 1)
+        self.previews = [tk.Canvas(self.preview_frame, width=64, height=64) for _ in range(self.preview_count)]
+        self._img_previews = [np.ndarray((64, 64)) for _ in range(self.preview_count)]
+        for _img in self._img_previews:
+            _img.fill(self.color)
+        self.image_previews = [Image.fromarray(self._img_previews[i]).resize((64, 64)) for i in
+                               range(self.preview_count)]
+        self.img_previews = [ImageTk.PhotoImage(image=self.image_previews[i], master=self.main) for i in
+                             range(self.preview_count)]
+        self.image_on_canvas_previews = []
+        self.preview_labels = [tk.Label(self.preview_frame, text='', height=1, width=6) for _ in
+                               range(self.preview_count)]
+        for i in range(self.preview_count):
+            self.preview_labels[i].grid(row=1, column=i + 1)
+            self.preview_labels[i].bind("<ButtonRelease-1>",
+                                        self.get_load_preview_image(i))
+            self.previews[i].bind("<ButtonRelease-1>",
+                                  self.get_load_preview_image(i))
+            self.previews[i].grid(row=0, column=i + 1)
+            self.image_on_canvas_previews.append(self.previews[i].create_image(0, 0, anchor=tk.NW,
+                                                                               image=self.img_previews[i]))
+
+    def get_load_preview_image(self, image_number):
+        def _load_preview_image(event):
+            self._open_image(self.preview_labels[image_number]['text'] + '.dcm')
+
+        return _load_preview_image
 
     def _setup_menubar(self):
         menubar = tk.Menu(self.main)
@@ -50,7 +90,7 @@ class MainWindow:
         self.canvas = tk.Canvas(self.main, width=512, height=512)
         self.executor = CommandExecutor(self.canvas, None)
         self.drawer = Drawer(self.canvas, self.executor)
-        self.canvas.grid(row=1, column=0)
+        self.canvas.grid(row=2, column=0)
         self.canvas.update()
 
     def _setup_drawing_bindings(self):
@@ -141,38 +181,99 @@ class MainWindow:
     def _setup_menu(self):
         self.b = tk.Button(self.main, text="Draw", command=self._draw_button_command, relief="raised")
         self.b.grid(row=0, column=0)
-        self.color_button = tk.Button(self.main, text="Select color", command=self._color_button_command, relief="raised")
+        self.color_button = tk.Button(self.main, text="Select color", command=self._color_button_command,
+                                      relief="raised")
         self.color_button.grid(row=0, column=1)
-        self.angle_button = tk.Button(self.main, text="Measure angle", command=self._angle_button_command, relief="raised")
+        self.angle_button = tk.Button(self.main, text="Measure angle", command=self._angle_button_command,
+                                      relief="raised")
         self.angle_button.grid(row=0, column=2)
-        self.rectangle_button = tk.Button(self.main, text="Rectangle", command=self._rectangle_button_command, relief="raised")
+        self.rectangle_button = tk.Button(self.main, text="Rectangle", command=self._rectangle_button_command,
+                                          relief="raised")
         self.rectangle_button.grid(row=0, column=3)
-        self.ellipse_button = tk.Button(self.main, text="Ellipse", command=self._ellipse_button_command, relief="raised")
+        self.ellipse_button = tk.Button(self.main, text="Ellipse", command=self._ellipse_button_command,
+                                        relief="raised")
         self.ellipse_button.grid(row=0, column=4)
         self.line_button = tk.Button(self.main, text="Line", command=self._line_button_command, relief="raised")
         self.line_button.grid(row=0, column=5)
         self.clear_button = tk.Button(self.main, text="Clear", command=self._clear_button_command, relief="raised")
         self.clear_button.grid(row=0, column=6)
 
+    def _open_image(self, name):
+        if name != '.dcm':
+            path = self.dir_path + name
+            self.dcm = pydicom.dcmread(path)
+            self._draw_image()
+
     def _open_file(self):
-        self.dcm = read_dicom()
+        self.dcm, path = read_dicom()
+        if not path:
+            return
+        self.dir_path = "/".join(path.split("/")[:-1]) + "/"
         if self.dcm is not None:
-            raw_image = self.dcm.pixel_array
+            self._draw_image()
 
-            self.drawer.pixel_spacing = self.dcm.data_element("PixelSpacing").value
+    def _draw_image(self):
+        raw_image = self.dcm.pixel_array
 
-            self.drawer.rescale_factor = (self._canvas_dimensions()[0] / self.dcm.pixel_array.shape[0],
-                                          self._canvas_dimensions()[1] / self.dcm.pixel_array.shape[1])
-            self.drawer.measure = True
+        dicom_files = self._list_dicoms_from_dir()
+        self.load_previews(dicom_files[self.offset:self.offset + self.preview_count])
 
-            self.image = Image.fromarray(raw_image).resize(self._canvas_dimensions())
-            self.img = ImageTk.PhotoImage(image=self.image)
-            self.canvas.itemconfig(self.image_on_canvas, image=self.img)
-            self.executor.undo_all()
-            self.executor.clear()
+        self.drawer.pixel_spacing = self.dcm.data_element("PixelSpacing").value
+
+        self.drawer.rescale_factor = (self._canvas_dimensions()[0] / self.dcm.pixel_array.shape[0],
+                                      self._canvas_dimensions()[1] / self.dcm.pixel_array.shape[1])
+        self.drawer.measure = True
+
+        self.image = Image.fromarray(raw_image).resize(self._canvas_dimensions())
+        self.img = ImageTk.PhotoImage(image=self.image)
+        self.canvas.itemconfig(self.image_on_canvas, image=self.img)
+        self.executor.undo_all()
+        self.executor.clear()
+
+    def _list_dicoms_from_dir(self):
+        return list(map(lambda name: self.dir_path + name,
+                        filter(lambda file: file.endswith(".dcm"), os.listdir(self.dir_path))))
+
+    def update_window(self, event=None):
+        self.image = Image.fromarray(self._img).resize(self._canvas_dimensions())
+        self.img = ImageTk.PhotoImage(image=self.image)
+        self.canvas.itemconfig(self.image_on_canvas, image=self.img)
 
     def _canvas_dimensions(self):
         return self.canvas.winfo_width(), self.canvas.winfo_height()
+
+    def previous_preview(self, event=None):
+        if not self.dir_path:
+            return
+        dicom_files = self._list_dicoms_from_dir()
+        if self.offset > 0:
+            self.offset -= 1
+            self.load_previews(dicom_files[self.offset:self.offset + self.preview_count])
+
+    def next_preview(self, event=None):
+        if not self.dir_path:
+            return
+        dicom_files = self._list_dicoms_from_dir()
+        if self.offset < len(dicom_files) - self.preview_count:
+            self.offset += 1
+            self.load_previews(dicom_files[self.offset:self.offset + self.preview_count])
+
+    def load_previews(self, image_paths):
+        for index, path in enumerate(image_paths):
+            self.load_preview(index, path)
+        for index in range(len(image_paths), self.preview_count):
+            self.load_preview(index, '')
+
+    def load_preview(self, index, path):
+        if path:
+            self._img_previews[index] = pydicom.dcmread(path).pixel_array
+        else:
+            self._img_previews[index].fill(self.color)
+        self.image_previews[index] = Image.fromarray(self._img_previews[index]) \
+            .resize((self.previews[index].winfo_width(), self.previews[index].winfo_height()))
+        self.img_previews[index] = ImageTk.PhotoImage(image=self.image_previews[index])
+        self.previews[index].itemconfig(self.image_on_canvas_previews[index], image=self.img_previews[index])
+        self.preview_labels[index].config(text=path.split('/')[-1].split('.')[0] if path else '')
 
 
 def main():

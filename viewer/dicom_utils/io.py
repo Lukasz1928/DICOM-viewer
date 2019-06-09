@@ -9,4 +9,4 @@ def read_dicom():
     dcm = None
     if path != '':
         dcm = pydicom.dcmread(path)
-    return dcm
+    return dcm, path
