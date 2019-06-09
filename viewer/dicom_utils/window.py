@@ -9,6 +9,7 @@ class DicomImageDisplay:
         self.canvas = canvas
         self.image_id = None
         self.original_image = None
+        self.windowed_image = None
         self.window_width = None
         self.window_centre = None
         self.root = root
@@ -52,11 +53,11 @@ class DicomImageDisplay:
     def _coords_to_window_params(self, coords):
         dx = coords[0] - self.prev_coords[0]
         dy = coords[1] - self.prev_coords[1]
-        return max(1, self.window_width + 2 * dx), max(1, self.window_centre + 2 * dy)
+        return self.window_width + 2 * dx, self.window_centre + 2 * dy
 
     def _update_image(self, print_window_params=True):
-        windowed_image = self.apply_window(self.original_image)
-        self.image = self._np_array_to_image(windowed_image)
+        self.windowed_image = self.apply_window(self.original_image)
+        self.image = self._np_array_to_image(self.windowed_image)
         self.canvas.itemconfig(self.image_id, image=self.image)
         if print_window_params:
             text = "L: {:.2f}\nW: {:.2f}".format(round(self.window_centre, 2), round(self.window_width), 2)
@@ -65,7 +66,7 @@ class DicomImageDisplay:
                 self.text_id = self.canvas.create_text(*self._calculate_params_label_location(), text=text,
                                                        font=('Consolas', 12), fill=color)
             else:
-                self.canvas.itemconfig(self.text_id, text=text)
+                self.canvas.itemconfig(self.text_id, text=text, font=('Consolas', 12), fill=color)
 
     def _calculate_params_label_location(self):
         x, y = self.canvas_dimensions()
@@ -73,8 +74,8 @@ class DicomImageDisplay:
 
     def _calculate_params_label_text_color(self):
         x, y = self.canvas_dimensions()
-        xi, yi = self.original_image.shape[1], self.original_image.shape[0]
-        avg = np.mean(self.original_image[int(yi - (50.0 * yi / y)):, int(xi - (100.0 * xi / x)):])
+        xi, yi = self.windowed_image.shape[1], self.windowed_image.shape[0]
+        avg = np.mean(self.windowed_image[int(yi - (50.0 * yi / y)):, int(xi - (100.0 * xi / x)):])
         return '#ffffff' if avg < 150 else '#000000'
 
     def _np_array_to_image(self, img):
