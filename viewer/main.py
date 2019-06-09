@@ -51,18 +51,18 @@ class MainWindow:
             .grid(row=0, column=0)
         tk.Button(master=self.preview_frame, text=">", command=self.next_preview, relief="raised") \
             .grid(row=0, column=self.preview_count + 1)
-        self.previews = [tk.Canvas(self.preview_frame, width=64, height=64) for _ in range(0, self.preview_count)]
-        self._img_previews = [np.ndarray((64, 64)) for _ in range(0, self.preview_count)]
+        self.previews = [tk.Canvas(self.preview_frame, width=64, height=64) for _ in range(self.preview_count)]
+        self._img_previews = [np.ndarray((64, 64)) for _ in range(self.preview_count)]
         for _img in self._img_previews:
             _img.fill(self.color)
         self.image_previews = [Image.fromarray(self._img_previews[i]).resize((64, 64)) for i in
-                               range(0, self.preview_count)]
+                               range(self.preview_count)]
         self.img_previews = [ImageTk.PhotoImage(image=self.image_previews[i], master=self.main) for i in
-                             range(0, self.preview_count)]
+                             range(self.preview_count)]
         self.image_on_canvas_previews = []
         self.preview_labels = [tk.Label(self.preview_frame, text='', height=1, width=6) for _ in
-                               range(0, self.preview_count)]
-        for i in range(0, self.preview_count):
+                               range(self.preview_count)]
+        for i in range(self.preview_count):
             self.preview_labels[i].grid(row=1, column=i + 1)
             self.preview_labels[i].bind("<ButtonRelease-1>",
                                         self.get_load_preview_image(i))
