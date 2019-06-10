@@ -1,5 +1,6 @@
 import os
 import tkinter as tk
+from tkinter import messagebox
 from tkinter.colorchooser import askcolor
 
 import numpy as np
@@ -12,6 +13,8 @@ from viewer.drawer import Drawer
 
 
 class MainWindow:
+    VERSION = 1.0
+    REPO_LINK = 'https://github.com/Lukasz1928/DICOM-viewer/'
 
     def __init__(self, main: tk.Tk):
         self.main = main
@@ -81,9 +84,10 @@ class MainWindow:
     def _setup_menubar(self):
         menubar = tk.Menu(self.main)
         filemenu = tk.Menu(menubar, tearoff=0)
-        filemenu.add_command(label="Open", command=self._open_file)
+        filemenu.add_command(label='Open', command=self._open_file)
         menubar = tk.Menu(self.main)
-        menubar.add_cascade(label="File", menu=filemenu)
+        menubar.add_cascade(label='File', menu=filemenu)
+        menubar.add_command(label='Info', command=self._show_info)
         self.main.config(menu=menubar)
 
     def _setup_canvas(self):
@@ -179,24 +183,27 @@ class MainWindow:
         self.line_button.config(relief="raised")
 
     def _setup_menu(self):
-        self.b = tk.Button(self.main, text="Draw", command=self._draw_button_command, relief="raised")
-        self.b.grid(row=0, column=0)
-        self.color_button = tk.Button(self.main, text="Select color", command=self._color_button_command,
+        self.button_frame = tk.Frame(self.main)
+        self.button_frame.grid(row=2, column=1)
+        self.b = tk.Button(self.button_frame, text="Draw", command=self._draw_button_command, relief="raised")
+        self.b.pack(fill=tk.X)
+        self.color_button = tk.Button(self.button_frame, text="Select color", command=self._color_button_command,
                                       relief="raised")
-        self.color_button.grid(row=0, column=1)
-        self.angle_button = tk.Button(self.main, text="Measure angle", command=self._angle_button_command,
+        self.color_button.pack(fill=tk.X)
+        self.angle_button = tk.Button(self.button_frame, text="Measure angle", command=self._angle_button_command,
                                       relief="raised")
-        self.angle_button.grid(row=0, column=2)
-        self.rectangle_button = tk.Button(self.main, text="Rectangle", command=self._rectangle_button_command,
+        self.angle_button.pack(fill=tk.X)
+        self.rectangle_button = tk.Button(self.button_frame, text="Rectangle", command=self._rectangle_button_command,
                                           relief="raised")
-        self.rectangle_button.grid(row=0, column=3)
-        self.ellipse_button = tk.Button(self.main, text="Ellipse", command=self._ellipse_button_command,
+        self.rectangle_button.pack(fill=tk.X)
+        self.ellipse_button = tk.Button(self.button_frame, text="Ellipse", command=self._ellipse_button_command,
                                         relief="raised")
-        self.ellipse_button.grid(row=0, column=4)
-        self.line_button = tk.Button(self.main, text="Line", command=self._line_button_command, relief="raised")
-        self.line_button.grid(row=0, column=5)
-        self.clear_button = tk.Button(self.main, text="Clear", command=self._clear_button_command, relief="raised")
-        self.clear_button.grid(row=0, column=6)
+        self.ellipse_button.pack(fill=tk.X)
+        self.line_button = tk.Button(self.button_frame, text="Line", command=self._line_button_command, relief="raised")
+        self.line_button.pack(fill=tk.X)
+        self.clear_button = tk.Button(self.button_frame, text="Clear", command=self._clear_button_command,
+                                      relief="raised")
+        self.clear_button.pack(fill=tk.X)
 
     def _open_image(self, name):
         if name != '.dcm':
@@ -274,6 +281,10 @@ class MainWindow:
         self.img_previews[index] = ImageTk.PhotoImage(image=self.image_previews[index])
         self.previews[index].itemconfig(self.image_on_canvas_previews[index], image=self.img_previews[index])
         self.preview_labels[index].config(text=path.split('/')[-1].split('.')[0] if path else '')
+
+    def _show_info(self):
+        messagebox.showinfo("DICOM Viewer", "Authors:\nLukasz Niemiec\nMichal Zakrzewski\n\nVersion:{}\n\n{}"
+                            .format(self.VERSION, self.REPO_LINK))
 
 
 def main():
