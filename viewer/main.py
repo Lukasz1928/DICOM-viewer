@@ -13,6 +13,7 @@ from viewer.drawer import Drawer
 
 
 class MainWindow:
+    AUTHORS = ('Lukasz Niemiec', 'Michal Zakrzewski')
     VERSION = 1.0
     REPO_LINK = 'https://github.com/Lukasz1928/DICOM-viewer/'
 
@@ -74,12 +75,18 @@ class MainWindow:
             self.previews[i].grid(row=0, column=i + 1)
             self.image_on_canvas_previews.append(self.previews[i].create_image(0, 0, anchor=tk.NW,
                                                                                image=self.img_previews[i]))
+            self.previews[i].bind("<Enter>", self.get_preview_name(i))
+            self.previews[i].bind("<Leave>", self._clear_description)
 
     def get_load_preview_image(self, image_number):
         def _load_preview_image(event):
             self._open_image(self.preview_labels[image_number]['text'] + '.dcm')
-
         return _load_preview_image
+
+    def get_preview_name(self, image_number):
+        def _load_preview_image_name(event):
+            self.function_description.config(text=self.preview_labels[image_number]['text'] + '.dcm')
+        return _load_preview_image_name
 
     def _setup_menubar(self):
         menubar = tk.Menu(self.main)
@@ -87,6 +94,10 @@ class MainWindow:
         filemenu.add_command(label='Open', command=self._open_file)
         menubar = tk.Menu(self.main)
         menubar.add_cascade(label='File', menu=filemenu)
+        editmenu = tk.Menu(menubar, tearoff=0)
+        editmenu.add_command(label='Undo', command=self.executor.undo)
+        editmenu.add_command(label='Redo', command=self.executor.redo)
+        menubar.add_cascade(label='Edit', menu=editmenu)
         menubar.add_command(label='Info', command=self._show_info)
         self.main.config(menu=menubar)
 
@@ -183,27 +194,31 @@ class MainWindow:
         self.line_button.config(relief="raised")
 
     def _setup_menu(self):
+        self.function_description = tk.Label(self.main, height=1)
+        self.function_description.grid(row=3, column=0)
         self.button_frame = tk.Frame(self.main)
         self.button_frame.grid(row=2, column=1)
-        self.b = tk.Button(self.button_frame, text="Draw", command=self._draw_button_command, relief="raised")
-        self.b.pack(fill=tk.X)
-        self.color_button = tk.Button(self.button_frame, text="Select color", command=self._color_button_command,
-                                      relief="raised")
-        self.color_button.pack(fill=tk.X)
-        self.angle_button = tk.Button(self.button_frame, text="Measure angle", command=self._angle_button_command,
-                                      relief="raised")
-        self.angle_button.pack(fill=tk.X)
-        self.rectangle_button = tk.Button(self.button_frame, text="Rectangle", command=self._rectangle_button_command,
-                                          relief="raised")
-        self.rectangle_button.pack(fill=tk.X)
-        self.ellipse_button = tk.Button(self.button_frame, text="Ellipse", command=self._ellipse_button_command,
-                                        relief="raised")
-        self.ellipse_button.pack(fill=tk.X)
-        self.line_button = tk.Button(self.button_frame, text="Line", command=self._line_button_command, relief="raised")
-        self.line_button.pack(fill=tk.X)
-        self.clear_button = tk.Button(self.button_frame, text="Clear", command=self._clear_button_command,
-                                      relief="raised")
-        self.clear_button.pack(fill=tk.X)
+        self.b = self._create_button(text="Draw", command=self._draw_button_command, description='Enables drawing')
+        self.color_button = self._create_button(text="Color", command=self._color_button_command,
+                                                description='Select color for other operations')
+        self.angle_button = self._create_button(text="Angle", command=self._angle_button_command,
+                                                description='Measures angle')
+        self.rectangle_button = self._create_button(text="Rectangle", command=self._rectangle_button_command,
+                                                    description='Draws rectangle and measures its area')
+        self.ellipse_button = self._create_button(text="Ellipse", command=self._ellipse_button_command,
+                                                 description='Draws ellipse and measures its area')
+        self.line_button = self._create_button(text="Line", command=self._line_button_command,
+                                               description='Draws line and measures its length')
+        self.clear_button = self._create_button(text="Clear", command=self._clear_button_command,
+                                                description='Clears image and history')
+
+    def _create_button(self, text, command, description):
+        button = tk.Button(self.button_frame, text=text, command=command,
+                           relief="raised")
+        button.pack(fill=tk.X)
+        button.bind("<Enter>", lambda _: self._show_description(description))
+        button.bind("<Leave>", self._clear_description)
+        return button
 
     def _open_image(self, name):
         if name != '.dcm':
@@ -283,8 +298,14 @@ class MainWindow:
         self.preview_labels[index].config(text=path.split('/')[-1].split('.')[0] if path else '')
 
     def _show_info(self):
-        messagebox.showinfo("DICOM Viewer", "Authors:\nLukasz Niemiec\nMichal Zakrzewski\n\nVersion:{}\n\n{}"
-                            .format(self.VERSION, self.REPO_LINK))
+        messagebox.showinfo("DICOM Viewer", "Authors:\n{}\n\nVersion:{}\n\n{}"
+                            .format('\n'.join(self.AUTHORS), self.VERSION, self.REPO_LINK))
+
+    def _show_description(self, text):
+        self.function_description.config(text=text)
+
+    def _clear_description(self, event):
+        self.function_description.config(text='')
 
 
 def main():
