@@ -1,5 +1,6 @@
 import os
 import tkinter as tk
+from tkinter import messagebox, ttk
 from tkinter.colorchooser import askcolor
 
 import numpy as np
@@ -12,9 +13,14 @@ from viewer.drawer import Drawer
 
 
 class MainWindow:
+    AUTHORS = ('Lukasz Niemiec', 'Michal Zakrzewski')
+    VERSION = 1.0
+    REPO_LINK = 'https://github.com/Lukasz1928/DICOM-viewer/'
+    PROGRAM_NAME = 'DICOM-viewer'
 
     def __init__(self, main: tk.Tk):
         self.main = main
+        self.main.winfo_toplevel().title(self.PROGRAM_NAME)
         self._setup_canvas()
         self._setup_default_bindings()
         self._setup_initial_image()
@@ -47,10 +53,14 @@ class MainWindow:
         self.offset = 0
         self.preview_frame = tk.Frame(master=self.main, height=64, width=512)
         self.preview_frame.grid(row=1, column=0)
-        tk.Button(master=self.preview_frame, text="<", command=self.previous_preview, relief="raised") \
-            .grid(row=0, column=0)
-        tk.Button(master=self.preview_frame, text=">", command=self.next_preview, relief="raised") \
-            .grid(row=0, column=self.preview_count + 1)
+        self.previous_preview_button = tk.Button(master=self.preview_frame, text="<", command=self.previous_preview,
+                                                 relief="raised")
+        self.previous_preview_button.grid(row=0, column=0)
+        self._create_popup_description(self.previous_preview_button, 'Show previous previews in directory')
+        self.next_preview_button = tk.Button(master=self.preview_frame, text=">", command=self.next_preview,
+                                             relief="raised")
+        self.next_preview_button.grid(row=0, column=self.preview_count + 1)
+        self._create_popup_description(self.next_preview_button, 'Show next previews in directory')
         self.previews = [tk.Canvas(self.preview_frame, width=64, height=64) for _ in range(self.preview_count)]
         self._img_previews = [np.ndarray((64, 64)) for _ in range(self.preview_count)]
         for _img in self._img_previews:
@@ -71,6 +81,23 @@ class MainWindow:
             self.previews[i].grid(row=0, column=i + 1)
             self.image_on_canvas_previews.append(self.previews[i].create_image(0, 0, anchor=tk.NW,
                                                                                image=self.img_previews[i]))
+            self._create_popup_description(self.previews[i], self.get_preview_name(i))
+
+    def previous_preview(self, event=None):
+        if not self.dir_path:
+            return
+        dicom_files = self._list_dicoms_from_dir()
+        if self.offset > 0:
+            self.offset -= 1
+            self.load_previews(dicom_files[self.offset:self.offset + self.preview_count])
+
+    def next_preview(self, event=None):
+        if not self.dir_path:
+            return
+        dicom_files = self._list_dicoms_from_dir()
+        if self.offset < len(dicom_files) - self.preview_count:
+            self.offset += 1
+            self.load_previews(dicom_files[self.offset:self.offset + self.preview_count])
 
     def get_load_preview_image(self, image_number):
         def _load_preview_image(event):
@@ -78,13 +105,28 @@ class MainWindow:
 
         return _load_preview_image
 
+    def get_preview_name(self, image_number):
+        def _load_preview_image_name(event):
+            self.function_description.config(text=self.preview_labels[image_number]['text'] + '.dcm')
+
+        return _load_preview_image_name
+
     def _setup_menubar(self):
         menubar = tk.Menu(self.main)
         filemenu = tk.Menu(menubar, tearoff=0)
-        filemenu.add_command(label="Open", command=self._open_file)
+        filemenu.add_command(label='Open', command=self._open_file)
         menubar = tk.Menu(self.main)
-        menubar.add_cascade(label="File", menu=filemenu)
+        menubar.add_cascade(label='File', menu=filemenu)
+        editmenu = tk.Menu(menubar, tearoff=0)
+        editmenu.add_command(label='Undo', command=self.executor.undo)
+        editmenu.add_command(label='Redo', command=self.executor.redo)
+        menubar.add_cascade(label='Edit', menu=editmenu)
+        menubar.add_command(label='Info', command=self._show_info)
         self.main.config(menu=menubar)
+
+    def _show_info(self):
+        messagebox.showinfo("DICOM Viewer", "Authors:\n{}\n\nVersion:{}\n\n{}"
+                            .format('\n'.join(self.AUTHORS), self.VERSION, self.REPO_LINK))
 
     def _setup_canvas(self):
         self.canvas = tk.Canvas(self.main, width=512, height=512)
@@ -179,24 +221,44 @@ class MainWindow:
         self.line_button.config(relief="raised")
 
     def _setup_menu(self):
-        self.b = tk.Button(self.main, text="Draw", command=self._draw_button_command, relief="raised")
-        self.b.grid(row=0, column=0)
-        self.color_button = tk.Button(self.main, text="Select color", command=self._color_button_command,
-                                      relief="raised")
-        self.color_button.grid(row=0, column=1)
-        self.angle_button = tk.Button(self.main, text="Measure angle", command=self._angle_button_command,
-                                      relief="raised")
-        self.angle_button.grid(row=0, column=2)
-        self.rectangle_button = tk.Button(self.main, text="Rectangle", command=self._rectangle_button_command,
-                                          relief="raised")
-        self.rectangle_button.grid(row=0, column=3)
-        self.ellipse_button = tk.Button(self.main, text="Ellipse", command=self._ellipse_button_command,
-                                        relief="raised")
-        self.ellipse_button.grid(row=0, column=4)
-        self.line_button = tk.Button(self.main, text="Line", command=self._line_button_command, relief="raised")
-        self.line_button.grid(row=0, column=5)
-        self.clear_button = tk.Button(self.main, text="Clear", command=self._clear_button_command, relief="raised")
-        self.clear_button.grid(row=0, column=6)
+        self.function_description = tk.Label(self.main, height=1)
+        self.function_description.grid(row=3, column=0)
+        self.button_frame = tk.Frame(self.main)
+        self.button_frame.grid(row=2, column=1)
+        self.undo_redo_frame = tk.Frame(self.button_frame)
+        self.undo_redo_frame.pack(fill=tk.X)
+        self.undo_button = tk.Button(self.undo_redo_frame, text='Undo', command=self.executor.undo, relief="raised")
+        self.undo_button.grid(row=0, column=0)
+        self._create_popup_description(self.undo_button, 'Undo last action')
+        self.redo_button = tk.Button(self.undo_redo_frame, text='Redo', command=self.executor.redo, relief="raised")
+        self.redo_button.grid(row=0, column=1)
+        self._create_popup_description(self.redo_button, 'Redo last action')
+        self._insert_separator()
+        self.b = self._create_button(text="Draw", command=self._draw_button_command, description='Enables drawing')
+        self.angle_button = self._create_button(text="Angle", command=self._angle_button_command,
+                                                description='Measures angle')
+        self.rectangle_button = self._create_button(text="Rectangle", command=self._rectangle_button_command,
+                                                    description='Draws rectangle and measures its area')
+        self.ellipse_button = self._create_button(text="Ellipse", command=self._ellipse_button_command,
+                                                  description='Draws ellipse and measures its area')
+        self.line_button = self._create_button(text="Line", command=self._line_button_command,
+                                               description='Draws line and measures its length')
+        self._insert_separator()
+        self.color_button = self._create_button(text="Color", command=self._color_button_command,
+                                                description='Select color for other operations')
+        self._insert_separator()
+        self.clear_button = self._create_button(text="Clear", command=self._clear_button_command,
+                                                description='Clears image and edit history')
+
+    def _insert_separator(self):
+        ttk.Separator(self.button_frame, orient=tk.HORIZONTAL).pack(fill=tk.X, pady=20)
+
+    def _create_button(self, text, command, description):
+        button = tk.Button(self.button_frame, text=text, command=command,
+                           relief="raised")
+        button.pack(fill=tk.X)
+        self._create_popup_description(button, description)
+        return button
 
     def _open_image(self, name):
         if name != '.dcm':
@@ -230,34 +292,6 @@ class MainWindow:
         self.executor.undo_all()
         self.executor.clear()
 
-    def _list_dicoms_from_dir(self):
-        return list(map(lambda name: self.dir_path + name,
-                        filter(lambda file: file.endswith(".dcm"), os.listdir(self.dir_path))))
-
-    def update_window(self, event=None):
-        self.image = Image.fromarray(self._img).resize(self._canvas_dimensions())
-        self.img = ImageTk.PhotoImage(image=self.image)
-        self.canvas.itemconfig(self.image_on_canvas, image=self.img)
-
-    def _canvas_dimensions(self):
-        return self.canvas.winfo_width(), self.canvas.winfo_height()
-
-    def previous_preview(self, event=None):
-        if not self.dir_path:
-            return
-        dicom_files = self._list_dicoms_from_dir()
-        if self.offset > 0:
-            self.offset -= 1
-            self.load_previews(dicom_files[self.offset:self.offset + self.preview_count])
-
-    def next_preview(self, event=None):
-        if not self.dir_path:
-            return
-        dicom_files = self._list_dicoms_from_dir()
-        if self.offset < len(dicom_files) - self.preview_count:
-            self.offset += 1
-            self.load_previews(dicom_files[self.offset:self.offset + self.preview_count])
-
     def load_previews(self, image_paths):
         for index, path in enumerate(image_paths):
             self.load_preview(index, path)
@@ -274,6 +308,28 @@ class MainWindow:
         self.img_previews[index] = ImageTk.PhotoImage(image=self.image_previews[index])
         self.previews[index].itemconfig(self.image_on_canvas_previews[index], image=self.img_previews[index])
         self.preview_labels[index].config(text=path.split('/')[-1].split('.')[0] if path else '')
+
+    def _list_dicoms_from_dir(self):
+        return list(map(lambda name: self.dir_path + name,
+                        filter(lambda file: file.endswith(".dcm"), os.listdir(self.dir_path))))
+
+    def update_window(self, event=None):
+        self.image = Image.fromarray(self._img).resize(self._canvas_dimensions())
+        self.img = ImageTk.PhotoImage(image=self.image)
+        self.canvas.itemconfig(self.image_on_canvas, image=self.img)
+
+    def _canvas_dimensions(self):
+        return self.canvas.winfo_width(), self.canvas.winfo_height()
+
+    def _create_popup_description(self, item, description):
+        item.bind("<Enter>", lambda _: self._show_description(description))
+        item.bind("<Leave>", self._clear_description)
+
+    def _show_description(self, text):
+        self.function_description.config(text=text)
+
+    def _clear_description(self, event):
+        self.function_description.config(text='')
 
 
 def main():
