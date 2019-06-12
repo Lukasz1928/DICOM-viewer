@@ -128,7 +128,8 @@ class MainWindow:
 
     def _color_button_command(self):
         color = askcolor()
-        self.drawer.set_color(color[1])
+        if color[1] is not None:
+            self.drawer.set_color(color[1])
 
     def _angle_button_command(self):
         if self.angle_button.config('relief')[-1] == 'sunken':
