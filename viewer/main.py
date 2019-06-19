@@ -4,26 +4,19 @@ from tkinter import messagebox, ttk
 from tkinter.colorchooser import askcolor
 
 import pydicom
-from PIL import Image, ImageTk
 
 from viewer.command.command_executor import CommandExecutor
 from viewer.dicom_utils.io import read_dicom
 from viewer.dicom_utils.window import DicomImageDisplay
 from viewer.drawer import Drawer
+from viewer.utils.program_data import PROGRAM_NAME, AUTHORS, VERSION, REPO_LINK
 
 
 class MainWindow:
-    AUTHORS = ('Lukasz Niemiec', 'Michal Zakrzewski')
-    VERSION = 1.0
-    REPO_LINK = 'https://github.com/Lukasz1928/DICOM-viewer/'
-    PROGRAM_NAME = 'DICOM-viewer'
 
     def __init__(self, root: tk.Tk):
-
-        self.color = 255  # TODO: remove
-
         self.main = root
-        self.main.winfo_toplevel().title(self.PROGRAM_NAME)
+        self.main.winfo_toplevel().title(PROGRAM_NAME)
         self._setup_canvas()
         self._setup_default_bindings()
         self._setup_initial_image()
@@ -64,7 +57,8 @@ class MainWindow:
             self.preview_frames[i].grid(row=0, column=i + 1)
         self.preview_canvases = [tk.Canvas(self.preview_frames[i], width=64, height=64) for i in
                                  range(self.preview_count)]
-        self.previews = [DicomImageDisplay(self.preview_canvases[i], with_window=False, print_window=False) for i in range(self.preview_count)]
+        self.previews = [DicomImageDisplay(self.preview_canvases[i], with_window=False, print_window=False) for i in
+                         range(self.preview_count)]
         self.preview_labels = [tk.Label(self.preview_frames[i], text='', height=1, width=6) for i in
                                range(self.preview_count)]
         for i in range(self.preview_count):
@@ -73,7 +67,7 @@ class MainWindow:
             self.preview_canvases[i].bind("<ButtonRelease-1>", self.get_load_preview_image(i))
             self.preview_canvases[i].grid(row=0, column=0)
             self.previews[i].set_default_image()
-            self._create_popup_description(self.preview_canvases[i], self.get_preview_name(i))
+            self._create_popup_description(self.preview_frames[i], self.get_preview_name(i))
 
     def previous_preview(self, event=None):
         if not self.dir_path:
@@ -94,13 +88,11 @@ class MainWindow:
     def get_load_preview_image(self, image_number):
         def _load_preview_image(event):
             self._open_image(self.preview_labels[image_number]['text'] + '.dcm')
-
         return _load_preview_image
 
     def get_preview_name(self, image_number):
         def _load_preview_image_name(event):
             self.function_description.config(text=self.preview_labels[image_number]['text'] + '.dcm')
-
         return _load_preview_image_name
 
     def _setup_menubar(self):
@@ -118,7 +110,7 @@ class MainWindow:
 
     def _show_info(self):
         messagebox.showinfo("DICOM Viewer", "Authors:\n{}\n\nVersion:{}\n\n{}"
-                            .format('\n'.join(self.AUTHORS), self.VERSION, self.REPO_LINK))
+                            .format('\n'.join(AUTHORS), VERSION, REPO_LINK))
 
     def _setup_canvas(self):
         self.canvas = tk.Canvas(self.main, width=512, height=512)
@@ -228,6 +220,7 @@ class MainWindow:
         self.rectangle_button.config(relief="raised")
         self.ellipse_button.config(relief="raised")
         self.line_button.config(relief="raised")
+        self.window_button.config(relief="raised")
 
     def _setup_menu(self):
         self.function_description = tk.Label(self.main, height=1)
@@ -303,7 +296,7 @@ class MainWindow:
                                       self._canvas_dimensions()[1] / self.dcm.pixel_array.shape[1])
         self.drawer.measure = True
         self.display.set_image(raw_image, self.dcm.data_element("WindowWidth").value,
-                                          self.dcm.data_element("WindowCenter").value)
+                               self.dcm.data_element("WindowCenter").value)
         self.executor.undo_all()
         self.executor.clear()
 
@@ -317,7 +310,7 @@ class MainWindow:
         if path:
             dcm = read_dicom(path)[0]
             self.previews[index].set_image(dcm.pixel_array, self.dcm.data_element("WindowWidth").value,
-                                                    self.dcm.data_element("WindowCenter").value)
+                                           self.dcm.data_element("WindowCenter").value)
         else:
             self.previews[index].set_default_image()
         self.preview_labels[index].config(text=path.split('/')[-1].split('.')[0] if path else '')
