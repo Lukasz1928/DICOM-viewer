@@ -5,20 +5,21 @@ from PIL import Image, ImageTk
 
 
 class DicomImageDisplay:
-    def __init__(self, canvas, root):
+    def __init__(self, canvas, with_window=True, print_window=False):
         self.canvas = canvas
         self.image_id = None
         self.original_image = None
         self.windowed_image = None
         self.window_width = None
         self.window_centre = None
-        self.root = root
         self.image = None
         self.text_id = None
-
+        self.with_window=with_window
+        self.print_window=print_window
         self.prev_coords = None
 
     def set_default_image(self):
+        self.canvas.update()
         array_img = np.ndarray(self.canvas_dimensions())
         color = 255
         array_img.fill(color)
@@ -27,8 +28,10 @@ class DicomImageDisplay:
         self.image_id = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.image)
 
     def set_image(self, image, window_width, window_centre):
+        self.canvas.update()
         self.original_image = image
-        self.set_window_params(window_width, window_centre)
+        if self.with_window:
+            self.set_window_params(window_width, window_centre)
         self._update_image()
 
     def set_window_params(self, window_width=None, window_centre=None):
@@ -55,11 +58,11 @@ class DicomImageDisplay:
         dy = coords[1] - self.prev_coords[1]
         return self.window_width + 2 * dx, self.window_centre + 2 * dy
 
-    def _update_image(self, print_window_params=True):
+    def _update_image(self):
         self.windowed_image = self.apply_window(self.original_image)
         self.image = self._np_array_to_image(self.windowed_image)
         self.canvas.itemconfig(self.image_id, image=self.image)
-        if print_window_params:
+        if self.with_window and self.print_window:
             text = "L: {:.2f}\nW: {:.2f}".format(round(self.window_centre, 2), round(self.window_width), 2)
             color = self._calculate_params_label_text_color()
             if self.text_id is None:
@@ -91,6 +94,8 @@ class DicomImageDisplay:
         return (pixel - window_centre + window_width / 2.0) / window_width * 255.0
 
     def apply_window(self, image):
+        if not self.with_window:
+            return image
         img = np.ndarray(image.shape)
         for i in range(len(image)):
             for j in range(len(image[i])):
