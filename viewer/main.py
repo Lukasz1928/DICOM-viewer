@@ -1,14 +1,11 @@
-import os
 import tkinter as tk
 from tkinter import messagebox, ttk
 from tkinter.colorchooser import askcolor
 
-import pydicom
-
 from viewer.command.command_executor import CommandExecutor
-from viewer.dicom_utils.io import read_dicom
+from viewer.dicom_utils.io import read_dicom, list_dicoms_from_dir
 from viewer.dicom_utils.window import DicomImageDisplay
-from viewer.drawer import Drawer
+from viewer.images.drawer import Drawer
 from viewer.utils.program_data import PROGRAM_NAME, AUTHORS, VERSION, REPO_LINK
 
 
@@ -72,7 +69,7 @@ class MainWindow:
     def previous_preview(self, event=None):
         if not self.dir_path:
             return
-        dicom_files = self._list_dicoms_from_dir()
+        dicom_files = list_dicoms_from_dir(self.dir_path)
         if self.offset > 0:
             self.offset -= 1
             self.load_previews(dicom_files[self.offset:self.offset + self.preview_count])
@@ -80,7 +77,7 @@ class MainWindow:
     def next_preview(self, event=None):
         if not self.dir_path:
             return
-        dicom_files = self._list_dicoms_from_dir()
+        dicom_files = list_dicoms_from_dir(self.dir_path)
         if self.offset < len(dicom_files) - self.preview_count:
             self.offset += 1
             self.load_previews(dicom_files[self.offset:self.offset + self.preview_count])
@@ -116,9 +113,7 @@ class MainWindow:
         self.canvas = tk.Canvas(self.main, width=512, height=512)
         self.canvas.grid(row=2, column=0)
         self.canvas.update()
-
         self.executor = CommandExecutor(self.canvas, None)
-
         self.drawer = Drawer(self.canvas, self.executor)
         self.display = DicomImageDisplay(self.canvas, with_window=True, print_window=True)
 
@@ -266,8 +261,7 @@ class MainWindow:
 
     def _open_image(self, name):
         if name != '.dcm':
-            path = self.dir_path + name
-            self.dcm = pydicom.dcmread(path)
+            self.dcm, _ = read_dicom(self.dir_path + name)
             self._draw_image()
 
     def _open_file(self):
@@ -289,7 +283,7 @@ class MainWindow:
     def _draw_image(self):
         raw_image = self.dcm.pixel_array
 
-        dicom_files = self._list_dicoms_from_dir()
+        dicom_files = list_dicoms_from_dir(self.dir_path)
         self.load_previews(dicom_files[self.offset:self.offset + self.preview_count])
         self.drawer.pixel_spacing = self.dcm.data_element("PixelSpacing").value
         self.drawer.rescale_factor = (self._canvas_dimensions()[0] / self.dcm.pixel_array.shape[0],
@@ -314,10 +308,6 @@ class MainWindow:
         else:
             self.previews[index].set_default_image()
         self.preview_labels[index].config(text=path.split('/')[-1].split('.')[0] if path else '')
-
-    def _list_dicoms_from_dir(self):
-        return list(map(lambda name: self.dir_path + name,
-                        filter(lambda file: file.endswith(".dcm"), os.listdir(self.dir_path))))
 
     def _canvas_dimensions(self):
         return self.canvas.winfo_width(), self.canvas.winfo_height()
