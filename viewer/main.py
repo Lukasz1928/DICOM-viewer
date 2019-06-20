@@ -6,6 +6,8 @@ from viewer.command.command_executor import CommandExecutor
 from viewer.dicom_utils.io import read_dicom, list_dicoms_from_dir
 from viewer.dicom_utils.window import DicomImageDisplay
 from viewer.images.drawer import Drawer
+from viewer.images.edits.blur import mean, gaussian
+from viewer.images.edits.edge import canny, sobel, laplacian
 from viewer.utils.program_data import PROGRAM_NAME, AUTHORS, VERSION, REPO_LINK
 
 
@@ -119,6 +121,21 @@ class MainWindow:
         editmenu.add_command(label='Redo', command=self.executor.redo)
         menubar.add_cascade(label='Edit', menu=editmenu)
         menubar.add_command(label='Info', command=self._show_info)
+
+        transformmenu = tk.Menu(menubar, tearoff=False)
+        editmenu_edge = tk.Menu(transformmenu, tearoff=False)
+        editmenu_edge.add_command(label="Canny", command=self.display.get_apply_transform(canny))
+        editmenu_edge.add_command(label="Sobel", command=self.display.get_apply_transform(sobel))
+        editmenu_edge.add_command(label="Laplacian", command=self.display.get_apply_transform(laplacian))
+        transformmenu.add_cascade(label="Edge", menu=editmenu_edge)
+
+        editmenu_blur = tk.Menu(transformmenu, tearoff=False)
+        editmenu_blur.add_command(label="Median", command=self.display.get_apply_transform(mean))
+        editmenu_blur.add_command(label="Gaussian", command=self.display.get_apply_transform(gaussian))
+        transformmenu.add_cascade(label="Blur", menu=editmenu_blur)
+
+        menubar.add_cascade(label="Transform", menu=transformmenu)
+
         self.main.config(menu=menubar)
 
     def _show_info(self):
