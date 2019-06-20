@@ -113,13 +113,13 @@ class DicomImageDisplay:
     def canvas_dimensions(self):
         return self.canvas.winfo_width(), self.canvas.winfo_height()
 
-    def apply_transform(self, transform):
-        self.windowed_image = transform(self.windowed_image)
+    def apply_transform(self, transform, **transform_args):
+        self.windowed_image = transform(self.windowed_image, **transform_args)
         self.image = self._np_array_to_image(self.windowed_image)
         self.canvas.itemconfig(self.image_id, image=self.image)
 
-    def get_apply_transform(self, transform):
+    def get_apply_transform(self, transform, **transform_args):
         def fun():
             if self.image_set:
-                self.apply_transform(transform)
+                self.apply_transform(transform, **transform_args)
         return fun
