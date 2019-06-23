@@ -43,11 +43,11 @@ class MainWindow:
         self.previous_preview_button = tk.Button(master=self.preview_frame, text="<", command=self.previous_preview,
                                                  relief="raised")
         self.previous_preview_button.grid(row=0, column=0)
-        self._create_popup_description(self.previous_preview_button, 'Show previous previews in directory')
+        self._create_popup_description(self.previous_preview_button, lambda: 'Show previous previews in directory')
         self.next_preview_button = tk.Button(master=self.preview_frame, text=">", command=self.next_preview,
                                              relief="raised")
         self.next_preview_button.grid(row=0, column=self.preview_count + 1)
-        self._create_popup_description(self.next_preview_button, 'Show next previews in directory')
+        self._create_popup_description(self.next_preview_button, lambda: 'Show next previews in directory')
 
         self.preview_frames = [tk.Frame(self.preview_frame) for _ in range(self.preview_count)]
         for i in range(self.preview_count):
@@ -88,8 +88,9 @@ class MainWindow:
         return _load_preview_image
 
     def get_preview_name(self, image_number):
-        def _load_preview_image_name(event):
-            self.function_description.config(text=self.preview_labels[image_number]['text'] + '.dcm')
+        def _load_preview_image_name(event=None):
+            name = self.preview_labels[image_number]['text']
+            self.function_description.config(text='{}.dcm'.format(name) if name != '' else '')
         return _load_preview_image_name
 
     def _setup_menubar(self):
@@ -226,10 +227,10 @@ class MainWindow:
         self.undo_redo_frame.pack(fill=tk.X)
         self.undo_button = tk.Button(self.undo_redo_frame, text='Undo', command=self.executor.undo, relief="raised")
         self.undo_button.grid(row=0, column=0)
-        self._create_popup_description(self.undo_button, 'Undo last action')
+        self._create_popup_description(self.undo_button, lambda: 'Undo last action')
         self.redo_button = tk.Button(self.undo_redo_frame, text='Redo', command=self.executor.redo, relief="raised")
         self.redo_button.grid(row=0, column=1)
-        self._create_popup_description(self.redo_button, 'Redo last action')
+        self._create_popup_description(self.redo_button, lambda: 'Redo last action')
         self._insert_separator()
         self.draw_button = self._create_button(text="Draw", command=self._draw_button_command,
                                                description='Enables drawing')
@@ -256,7 +257,7 @@ class MainWindow:
     def _create_button(self, text, command, description):
         button = tk.Button(self.button_frame, text=text, command=command, relief="raised")
         button.pack(fill=tk.X)
-        self._create_popup_description(button, description)
+        self._create_popup_description(button, lambda: description)
         return button
 
     def _open_image(self, name):
@@ -313,7 +314,7 @@ class MainWindow:
         return self.canvas.winfo_width(), self.canvas.winfo_height()
 
     def _create_popup_description(self, item, description):
-        item.bind("<Enter>", lambda _: self._show_description(description))
+        item.bind("<Enter>", lambda _: self._show_description(description()))
         item.bind("<Leave>", self._clear_description)
 
     def _show_description(self, text):
