@@ -1,10 +1,11 @@
 import os
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import messagebox, ttk, scrolledtext
 from tkinter.colorchooser import askcolor
 
 import numpy as np
 import pydicom
+import pydicom.dataelem
 from PIL import Image, ImageTk
 
 from viewer.command.command_executor import CommandExecutor
@@ -21,6 +22,7 @@ class MainWindow:
     def __init__(self, main: tk.Tk):
         self.main = main
         self.main.winfo_toplevel().title(self.PROGRAM_NAME)
+        self._setup_tag_list()
         self._setup_canvas()
         self._setup_default_bindings()
         self._setup_initial_image()
@@ -39,6 +41,11 @@ class MainWindow:
         self.main.bind("<Control-z>", self.executor.undo)
         self.main.bind("<Control-Shift-Z>", self.executor.redo)
 
+    def _setup_tag_list(self):
+        self.tag_list = tk.scrolledtext.ScrolledText(master=self.main, width=64)
+        self.tag_list.grid(row=2, column=0)
+        self.tag_list.config(state=tk.DISABLED)
+
     def _setup_initial_image(self):
         self.dir_path = ''
         self._img = np.ndarray(self._canvas_dimensions())
@@ -52,7 +59,7 @@ class MainWindow:
         self.preview_count = 6
         self.offset = 0
         self.preview_frame = tk.Frame(master=self.main, height=64, width=512)
-        self.preview_frame.grid(row=1, column=0)
+        self.preview_frame.grid(row=1, column=1)
         self.previous_preview_button = tk.Button(master=self.preview_frame, text="<", command=self.previous_preview,
                                                  relief="raised")
         self.previous_preview_button.grid(row=0, column=0)
@@ -132,7 +139,7 @@ class MainWindow:
         self.canvas = tk.Canvas(self.main, width=512, height=512)
         self.executor = CommandExecutor(self.canvas, None)
         self.drawer = Drawer(self.canvas, self.executor)
-        self.canvas.grid(row=2, column=0)
+        self.canvas.grid(row=2, column=1)
         self.canvas.update()
 
     def _setup_drawing_bindings(self):
@@ -225,7 +232,7 @@ class MainWindow:
         self.function_description = tk.Label(self.main, height=1)
         self.function_description.grid(row=3, column=0)
         self.button_frame = tk.Frame(self.main)
-        self.button_frame.grid(row=2, column=1)
+        self.button_frame.grid(row=2, column=2)
         self.undo_redo_frame = tk.Frame(self.button_frame)
         self.undo_redo_frame.pack(fill=tk.X)
         self.undo_button = tk.Button(self.undo_redo_frame, text='Undo', command=self.executor.undo, relief="raised")
@@ -266,6 +273,7 @@ class MainWindow:
             path = self.dir_path + name
             self.dcm = pydicom.dcmread(path)
             self._draw_image()
+            self._read_tags()
 
     def _open_file(self):
         self.dcm, path = read_dicom()
@@ -274,6 +282,7 @@ class MainWindow:
         self.dir_path = "/".join(path.split("/")[:-1]) + "/"
         if self.dcm is not None:
             self._draw_image()
+            self._read_tags()
 
     def _draw_image(self):
         raw_image = self.dcm.pixel_array
@@ -331,6 +340,14 @@ class MainWindow:
 
     def _clear_description(self, event):
         self.function_description.config(text='')
+
+    def _read_tags(self):
+        # TODO: change below map function if change in printing tag data needed
+        self.tag_text = '\n'.join(map(lambda x: str(x), self.dcm))
+        self.tag_list.config(state=tk.NORMAL)
+        self.tag_list.delete(1.0, tk.END)
+        self.tag_list.insert(tk.END, self.tag_text)
+        self.tag_list.config(state=tk.DISABLED)
 
 
 def main():
