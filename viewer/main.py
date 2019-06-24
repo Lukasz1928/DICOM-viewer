@@ -91,12 +91,14 @@ class MainWindow:
     def get_load_preview_image(self, image_number):
         def _load_preview_image(event):
             self._open_image(self.preview_labels[image_number]['text'] + '.dcm')
+
         return _load_preview_image
 
     def get_preview_name(self, image_number):
         def _load_preview_image_name(event=None):
             name = self.preview_labels[image_number]['text']
             self.function_description.config(text='{}.dcm'.format(name) if name != '' else '')
+
         return _load_preview_image_name
 
     def _setup_menubar(self):
