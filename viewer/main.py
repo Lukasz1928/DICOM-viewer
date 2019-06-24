@@ -1,4 +1,3 @@
-import math
 import tkinter as tk
 from tkinter import messagebox, ttk, scrolledtext
 from tkinter.colorchooser import askcolor
@@ -123,7 +122,6 @@ class MainWindow:
         editmenu.add_command(label='Undo', command=self.executor.undo)
         editmenu.add_command(label='Redo', command=self.executor.redo)
         menubar.add_cascade(label='Edit', menu=editmenu)
-        menubar.add_command(label='Info', command=self._show_info)
 
         transformmenu = tk.Menu(menubar, tearoff=False)
         editmenu_edge = tk.Menu(transformmenu, tearoff=False)
@@ -152,6 +150,7 @@ class MainWindow:
         transformmenu.add_cascade(label='Flip or rotate', menu=editmenu_rotate)
 
         menubar.add_cascade(label='Transform', menu=transformmenu)
+        menubar.add_command(label='Info', command=self._show_info)
 
         self.main.config(menu=menubar)
 
