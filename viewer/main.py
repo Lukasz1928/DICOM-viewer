@@ -276,7 +276,8 @@ class MainWindow:
                                           self.display.canvas_dimensions()[1] / self.dcm.pixel_array.shape[1])
             self.drawer.measure = True
             self.display.set_image(self.dcm.pixel_array, self.dcm.data_element("WindowWidth").value,
-                                   self.dcm.data_element("WindowCenter").value)
+                                   self.dcm.data_element("WindowCenter").value,
+                                   self.dcm.data_element("BitsStored").value)
             self.executor.undo_all()
             self.executor.clear()
             self._draw_image()
@@ -291,7 +292,8 @@ class MainWindow:
                                       self._canvas_dimensions()[1] / self.dcm.pixel_array.shape[1])
         self.drawer.measure = True
         self.display.set_image(raw_image, self.dcm.data_element("WindowWidth").value,
-                               self.dcm.data_element("WindowCenter").value)
+                               self.dcm.data_element("WindowCenter").value,
+                               self.dcm.data_element("BitsStored").value)
         self.executor.undo_all()
         self.executor.clear()
 
@@ -304,8 +306,9 @@ class MainWindow:
     def load_preview(self, index, path):
         if path:
             dcm = read_dicom(path)[0]
-            self.previews[index].set_image(dcm.pixel_array, self.dcm.data_element("WindowWidth").value,
-                                           self.dcm.data_element("WindowCenter").value)
+            self.previews[index].set_image(dcm.pixel_array, dcm.data_element("WindowWidth").value,
+                                           dcm.data_element("WindowCenter").value,
+                                           dcm.data_element("BitsStored").value)
         else:
             self.previews[index].set_default_image()
         self.preview_labels[index].config(text=path.split('/')[-1].split('.')[0] if path else '')

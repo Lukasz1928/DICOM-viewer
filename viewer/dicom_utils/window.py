@@ -13,10 +13,12 @@ class DicomImageDisplay:
         self.window_width = None
         self.window_centre = None
         self.image = None
+        self.bits_stored = 0
         self.text_id = None
         self.with_window=with_window
         self.print_window=print_window
         self.prev_coords = None
+        self.image_set = False
 
     def set_default_image(self):
         self.canvas.update()
@@ -26,15 +28,18 @@ class DicomImageDisplay:
         self.original_image = array_img
         self.image = self._np_array_to_image(array_img)
         self.image_id = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.image)
+        self.image_set = False
 
-    def set_image(self, image, window_width, window_centre):
+    def set_image(self, image, window_width, window_centre, bits_stored):
         self.canvas.update()
+        self.bits_stored = bits_stored
         self.original_image = image
         if self.with_window:
-            self.set_window_params(window_width, window_centre)
+            self._set_window_params(window_width, window_centre)
         self._update_image()
+        self.image_set = True
 
-    def set_window_params(self, window_width=None, window_centre=None):
+    def _set_window_params(self, window_width=None, window_centre=None):
         if window_width is not None:
             self.window_width = window_width
         if window_centre is not None:
@@ -42,12 +47,14 @@ class DicomImageDisplay:
         self._update_image()
 
     def update_window_params(self, event):
+        if not self.image_set:
+            return
         x, y = event.x, event.y
         if self.prev_coords is None and event.type == '4' and event.num == 1:
             self.prev_coords = (x, y)
         elif self.prev_coords is not None:
             new_params = self._coords_to_window_params((x, y))
-            self.set_window_params(*new_params)
+            self._set_window_params(*new_params)
             if event.type == '5' and event.num == 1:
                 self.prev_coords = None
             else:
@@ -59,7 +66,7 @@ class DicomImageDisplay:
         return self.window_width + 2 * dx, self.window_centre + 2 * dy
 
     def _update_image(self):
-        self.windowed_image = self.apply_window(self.original_image)
+        self.windowed_image = self._apply_window(self.original_image)
         self.image = self._np_array_to_image(self.windowed_image)
         self.canvas.itemconfig(self.image_id, image=self.image)
         if self.with_window and self.print_window:
@@ -93,20 +100,15 @@ class DicomImageDisplay:
             return 255.0
         return (pixel - window_centre + window_width / 2.0) / window_width * 255.0
 
-    def apply_window(self, image):
+    def _apply_window(self, image):
         if not self.with_window:
             return image
-        img = np.ndarray(image.shape)
-        for i in range(len(image)):
-            for j in range(len(image[i])):
-                img[i][j] = self._map_pixel(image[i][j], self.window_width, self.window_centre)
-        return img
+        else:
+            img = np.ndarray(image.shape).astype(np.uint8)
+            for i in range(len(image)):
+                for j in range(len(image[i])):
+                    img[i][j] = self._map_pixel(image[i][j], self.window_width, self.window_centre)
+            return img
 
     def canvas_dimensions(self):
         return self.canvas.winfo_width(), self.canvas.winfo_height()
-
-
-
-
-
-
