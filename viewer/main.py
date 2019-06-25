@@ -33,12 +33,12 @@ class MainWindow:
         self.main.bind("<Control-Shift-Z>", self.executor.redo)
 
     def _setup_tag_list(self):
-        self.tag_frame = tk.Frame(master=self.main)
+        self.tag_frame = tk.Frame(master=self.main, height=512)
         self.tag_frame.grid(row=2, column=0, sticky='nsew')
         self.tag_list_scrollbar = tk.Scrollbar(master=self.tag_frame, orient=tk.HORIZONTAL)
         self.tag_list_scrollbar.config()
         self.tag_list = tk.scrolledtext.ScrolledText(master=self.tag_frame, wrap='none',
-                                                     xscrollcommand=self.tag_list_scrollbar.set)
+                                                     xscrollcommand=self.tag_list_scrollbar.set, height=31)
         self.tag_list.pack(fill=tk.BOTH)
         self.tag_list_scrollbar.pack(fill=tk.X)
         self.tag_list.config(state=tk.DISABLED)
