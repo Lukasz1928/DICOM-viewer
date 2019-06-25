@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox, ttk
+from tkinter import messagebox, ttk, scrolledtext
 from tkinter.colorchooser import askcolor
 
 from viewer.command.command_executor import CommandExecutor
@@ -14,6 +14,7 @@ class MainWindow:
     def __init__(self, root: tk.Tk):
         self.main = root
         self.main.winfo_toplevel().title(PROGRAM_NAME)
+        self._setup_tag_list()
         self._setup_canvas()
         self._setup_default_bindings()
         self._setup_initial_image()
@@ -31,15 +32,27 @@ class MainWindow:
         self.main.bind("<Control-z>", self.executor.undo)
         self.main.bind("<Control-Shift-Z>", self.executor.redo)
 
+    def _setup_tag_list(self):
+        self.tag_frame = tk.Frame(master=self.main, height=512)
+        self.tag_frame.grid(row=2, column=0, sticky='nsew')
+        self.tag_list_scrollbar = tk.Scrollbar(master=self.tag_frame, orient=tk.HORIZONTAL)
+        self.tag_list_scrollbar.config()
+        self.tag_list = tk.scrolledtext.ScrolledText(master=self.tag_frame, wrap='none',
+                                                     xscrollcommand=self.tag_list_scrollbar.set, height=31)
+        self.tag_list.pack(fill=tk.BOTH)
+        self.tag_list_scrollbar.pack(fill=tk.X)
+        self.tag_list.config(state=tk.DISABLED)
+        self.tag_list_scrollbar.config(command=self.tag_list.xview)
+
     def _setup_initial_image(self):
         self.dir_path = ''
         self.display.set_default_image()
 
     def _setup_preview(self):
-        self.preview_count = 6
+        self.preview_count = 15
         self.offset = 0
         self.preview_frame = tk.Frame(master=self.main, height=64, width=512)
-        self.preview_frame.grid(row=1, column=0)
+        self.preview_frame.grid(row=1, column=0, columnspan=2)
         self.previous_preview_button = tk.Button(master=self.preview_frame, text="<", command=self.previous_preview,
                                                  relief="raised")
         self.previous_preview_button.grid(row=0, column=0)
@@ -85,12 +98,14 @@ class MainWindow:
     def get_load_preview_image(self, image_number):
         def _load_preview_image(event):
             self._open_image(self.preview_labels[image_number]['text'] + '.dcm')
+
         return _load_preview_image
 
     def get_preview_name(self, image_number):
         def _load_preview_image_name(event=None):
             name = self.preview_labels[image_number]['text']
             self.function_description.config(text='{}.dcm'.format(name) if name != '' else '')
+
         return _load_preview_image_name
 
     def _setup_menubar(self):
@@ -112,7 +127,7 @@ class MainWindow:
 
     def _setup_canvas(self):
         self.canvas = tk.Canvas(self.main, width=512, height=512)
-        self.canvas.grid(row=2, column=0)
+        self.canvas.grid(row=2, column=1)
         self.canvas.update()
         self.executor = CommandExecutor(self.canvas, None)
         self.drawer = Drawer(self.canvas, self.executor)
@@ -220,9 +235,9 @@ class MainWindow:
 
     def _setup_menu(self):
         self.function_description = tk.Label(self.main, height=1)
-        self.function_description.grid(row=3, column=0)
+        self.function_description.grid(row=3, column=0, columnspan=2)
         self.button_frame = tk.Frame(self.main)
-        self.button_frame.grid(row=2, column=1)
+        self.button_frame.grid(row=2, column=2)
         self.undo_redo_frame = tk.Frame(self.button_frame)
         self.undo_redo_frame.pack(fill=tk.X)
         self.undo_button = tk.Button(self.undo_redo_frame, text='Undo', command=self.executor.undo, relief="raised")
@@ -264,6 +279,7 @@ class MainWindow:
         if name != '.dcm':
             self.dcm, _ = read_dicom(self.dir_path + name)
             self._draw_image()
+            self._read_tags()
 
     def _open_file(self):
         self.dcm, path = read_dicom()
@@ -281,6 +297,7 @@ class MainWindow:
             self.executor.undo_all()
             self.executor.clear()
             self._draw_image()
+            self._read_tags()
 
     def _draw_image(self):
         raw_image = self.dcm.pixel_array
@@ -325,6 +342,14 @@ class MainWindow:
 
     def _clear_description(self, event):
         self.function_description.config(text='')
+
+    def _read_tags(self):
+        # TODO: change below map function if change in printing tag data needed
+        self.tag_text = '\n'.join(map(lambda x: str(x), self.dcm))
+        self.tag_list.config(state=tk.NORMAL)
+        self.tag_list.delete(1.0, tk.END)
+        self.tag_list.insert(tk.END, self.tag_text)
+        self.tag_list.config(state=tk.DISABLED)
 
 
 def main():
