@@ -33,12 +33,14 @@ class MainWindow:
         self.main.bind("<Control-Shift-Z>", self.executor.redo)
 
     def _setup_tag_list(self):
-        self.tag_list_scrollbar = tk.Scrollbar(master=self.main, orient=tk.HORIZONTAL)
-        self.tag_list_scrollbar.grid(row=3, column=0, sticky=tk.N + tk.S + tk.E + tk.W)
+        self.tag_frame = tk.Frame(master=self.main)
+        self.tag_frame.grid(row=2, column=0, sticky='nsew')
+        self.tag_list_scrollbar = tk.Scrollbar(master=self.tag_frame, orient=tk.HORIZONTAL)
         self.tag_list_scrollbar.config()
-        self.tag_list = tk.scrolledtext.ScrolledText(master=self.main, width=64, wrap='none',
+        self.tag_list = tk.scrolledtext.ScrolledText(master=self.tag_frame, wrap='none',
                                                      xscrollcommand=self.tag_list_scrollbar.set)
-        self.tag_list.grid(row=2, column=0)
+        self.tag_list.pack(fill=tk.BOTH)
+        self.tag_list_scrollbar.pack(fill=tk.X)
         self.tag_list.config(state=tk.DISABLED)
         self.tag_list_scrollbar.config(command=self.tag_list.xview)
 
@@ -47,10 +49,10 @@ class MainWindow:
         self.display.set_default_image()
 
     def _setup_preview(self):
-        self.preview_count = 6
+        self.preview_count = 15
         self.offset = 0
         self.preview_frame = tk.Frame(master=self.main, height=64, width=512)
-        self.preview_frame.grid(row=1, column=1)
+        self.preview_frame.grid(row=1, column=0, columnspan=2)
         self.previous_preview_button = tk.Button(master=self.preview_frame, text="<", command=self.previous_preview,
                                                  relief="raised")
         self.previous_preview_button.grid(row=0, column=0)
@@ -233,7 +235,7 @@ class MainWindow:
 
     def _setup_menu(self):
         self.function_description = tk.Label(self.main, height=1)
-        self.function_description.grid(row=3, column=0)
+        self.function_description.grid(row=3, column=0, columnspan=2)
         self.button_frame = tk.Frame(self.main)
         self.button_frame.grid(row=2, column=2)
         self.undo_redo_frame = tk.Frame(self.button_frame)
