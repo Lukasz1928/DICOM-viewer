@@ -33,9 +33,14 @@ class MainWindow:
         self.main.bind("<Control-Shift-Z>", self.executor.redo)
 
     def _setup_tag_list(self):
-        self.tag_list = tk.scrolledtext.ScrolledText(master=self.main, width=64)
+        self.tag_list_scrollbar = tk.Scrollbar(master=self.main, orient=tk.HORIZONTAL)
+        self.tag_list_scrollbar.grid(row=3, column=0, sticky=tk.N + tk.S + tk.E + tk.W)
+        self.tag_list_scrollbar.config()
+        self.tag_list = tk.scrolledtext.ScrolledText(master=self.main, width=64, wrap='none',
+                                                     xscrollcommand=self.tag_list_scrollbar.set)
         self.tag_list.grid(row=2, column=0)
         self.tag_list.config(state=tk.DISABLED)
+        self.tag_list_scrollbar.config(command=self.tag_list.xview)
 
     def _setup_initial_image(self):
         self.dir_path = ''
