@@ -137,15 +137,15 @@ class MainWindow:
 
         editmenu_rotate = tk.Menu(transformmenu, tearoff=False)
         editmenu_rotate.add_command(label='Rotate 90 right',
-                                    command=self.display.get_apply_transform(rotate, angle=90))
-        editmenu_rotate.add_command(label='Rotate 90 left',
                                     command=self.display.get_apply_transform(rotate, angle=-90))
+        editmenu_rotate.add_command(label='Rotate 90 left',
+                                    command=self.display.get_apply_transform(rotate, angle=90))
         editmenu_rotate.add_command(label='Rotate custom angle',
                                     command=self.get_ask_and_apply(self.display.get_apply_transform, rotate, k='angle'))
         editmenu_rotate.add_command(label='Flip horizontally',
-                                    command=self.display.get_apply_transform(flip, flip_type=0))
-        editmenu_rotate.add_command(label='Flip vertically',
                                     command=self.display.get_apply_transform(flip, flip_type=1))
+        editmenu_rotate.add_command(label='Flip vertically',
+                                    command=self.display.get_apply_transform(flip, flip_type=0))
 
         transformmenu.add_cascade(label='Flip or rotate', menu=editmenu_rotate)
 
@@ -157,8 +157,8 @@ class MainWindow:
     def get_ask_and_apply(self, func, *args, **kwargs):
         def f():
             x = askinteger('Rotation angle', 'Enter rotation angle', parent=self.main)
-            print(x)
-            func(*args, **{kwargs['k']: x})()
+            if x is not None:
+                func(*args, **{kwargs['k']: -x})()
         return f
 
     def _show_info(self):
