@@ -12,7 +12,7 @@ class DicomImageDisplay:
         self.windowed_image = None
         self.window_width = None
         self.window_centre = None
-        self.image = None
+        self.canvas_image = None
         self.bits_stored = 0
         self.text_id = None
         self.with_window=with_window
@@ -26,8 +26,8 @@ class DicomImageDisplay:
         color = 255
         array_img.fill(color)
         self.original_image = array_img
-        self.image = self._np_array_to_image(array_img)
-        self.image_id = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.image)
+        self.canvas_image = self._np_array_to_image(array_img)
+        self.image_id = self.canvas.create_image(0, 0, anchor=tk.NW, image=self.canvas_image)
         self.image_set = False
 
     def set_image(self, image, window_width, window_centre, bits_stored):
@@ -67,8 +67,8 @@ class DicomImageDisplay:
 
     def _update_image(self):
         self.windowed_image = self._apply_window(self.original_image)
-        self.image = self._np_array_to_image(self.windowed_image)
-        self.canvas.itemconfig(self.image_id, image=self.image)
+        self.canvas_image = self._np_array_to_image(self.windowed_image)
+        self.canvas.itemconfig(self.image_id, image=self.canvas_image)
         if self.with_window and self.print_window:
             text = "L: {:.2f}\nW: {:.2f}".format(round(self.window_centre, 2), round(self.window_width), 2)
             color = self._calculate_params_label_text_color()
@@ -112,3 +112,15 @@ class DicomImageDisplay:
 
     def canvas_dimensions(self):
         return self.canvas.winfo_width(), self.canvas.winfo_height()
+
+    def _apply_transform(self, transform, **transform_args):
+        self.original_image = transform(self.windowed_image, **transform_args)
+        self.windowed_image = self.original_image
+        self.canvas_image = self._np_array_to_image(self.windowed_image)
+        self.canvas.itemconfig(self.image_id, image=self.canvas_image)
+
+    def get_apply_transform(self, transform, **transform_args):
+        def fun():
+            if self.image_set:
+                self._apply_transform(transform, **transform_args)
+        return fun

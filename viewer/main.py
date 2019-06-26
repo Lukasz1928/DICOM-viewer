@@ -1,11 +1,15 @@
 import tkinter as tk
 from tkinter import messagebox, ttk, scrolledtext
 from tkinter.colorchooser import askcolor
+from tkinter.simpledialog import askinteger
 
 from viewer.command.command_executor import CommandExecutor
 from viewer.dicom_utils.io import read_dicom, list_dicoms_from_dir
 from viewer.dicom_utils.window import DicomImageDisplay
 from viewer.images.drawer import Drawer
+from viewer.images.edits.blur import mean, gaussian
+from viewer.images.edits.edge import canny, sobel, laplacian
+from viewer.images.edits.rotation import rotate, flip
 from viewer.utils.program_data import PROGRAM_NAME, AUTHORS, VERSION, REPO_LINK
 
 
@@ -118,8 +122,44 @@ class MainWindow:
         editmenu.add_command(label='Undo', command=self.executor.undo)
         editmenu.add_command(label='Redo', command=self.executor.redo)
         menubar.add_cascade(label='Edit', menu=editmenu)
+
+        transformmenu = tk.Menu(menubar, tearoff=False)
+        editmenu_edge = tk.Menu(transformmenu, tearoff=False)
+        editmenu_edge.add_command(label='Canny', command=self.display.get_apply_transform(canny))
+        editmenu_edge.add_command(label='Sobel', command=self.display.get_apply_transform(sobel))
+        editmenu_edge.add_command(label='Laplacian', command=self.display.get_apply_transform(laplacian))
+        transformmenu.add_cascade(label='Edge', menu=editmenu_edge)
+
+        editmenu_blur = tk.Menu(transformmenu, tearoff=False)
+        editmenu_blur.add_command(label='Median', command=self.display.get_apply_transform(mean))
+        editmenu_blur.add_command(label='Gaussian', command=self.display.get_apply_transform(gaussian))
+        transformmenu.add_cascade(label='Blur', menu=editmenu_blur)
+
+        editmenu_rotate = tk.Menu(transformmenu, tearoff=False)
+        editmenu_rotate.add_command(label='Rotate 90 right',
+                                    command=self.display.get_apply_transform(rotate, angle=-90))
+        editmenu_rotate.add_command(label='Rotate 90 left',
+                                    command=self.display.get_apply_transform(rotate, angle=90))
+        editmenu_rotate.add_command(label='Rotate custom angle',
+                                    command=self.get_ask_and_apply(self.display.get_apply_transform, rotate, k='angle'))
+        editmenu_rotate.add_command(label='Flip horizontally',
+                                    command=self.display.get_apply_transform(flip, flip_type=1))
+        editmenu_rotate.add_command(label='Flip vertically',
+                                    command=self.display.get_apply_transform(flip, flip_type=0))
+
+        transformmenu.add_cascade(label='Flip or rotate', menu=editmenu_rotate)
+
+        menubar.add_cascade(label='Transform', menu=transformmenu)
         menubar.add_command(label='Info', command=self._show_info)
+
         self.main.config(menu=menubar)
+
+    def get_ask_and_apply(self, func, *args, **kwargs):
+        def f():
+            x = askinteger('Rotation angle', 'Enter rotation angle', parent=self.main)
+            if x is not None:
+                func(*args, **{kwargs['k']: -x})()
+        return f
 
     def _show_info(self):
         messagebox.showinfo("DICOM Viewer", "Authors:\n{}\n\nVersion:{}\n\n{}"
